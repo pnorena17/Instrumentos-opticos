@@ -1,22 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import cv2 as cv 
 
 #En primer lugar, definimos la abertura y longitud de onda
 long_de_onda = 650*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo: 650 nm
 #Por decir, usaremos de abertura un cuadrado de lado l
 l = 1*(10**(-3)) #(en metros) Usamos dimesión máxima: 1 mm
 z_max = (l/2)**2/(long_de_onda) #(en metros) Distancia máxima de la pantalla, para que cumpla criterio de frenel
-z = z_max - 0.050 #(En metros) La disminuimos 5 cm para evitar criticidad.
-
+#z = z_max - 0.050 #(En metros) La disminuimos 5 cm para evitar criticidad.
+z=0.1
 #PODRÍAMOS REVISAR QUE z SEA POSITIVO, POR SI ALGO
 
 ##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################33
 
 # Ahora, crearemos las variables que necesitamos
 N_f = (l/2)**2/(long_de_onda*z) #Numero de Fresnel, deber ser mayor a 1 para que cumpla la aproximación
-M = int((4*N_f)) #Criterio aliasing: M > 4N_f
-Q = 130 #Debe ser mayor a q y depende de el orden de interpolacion
+M = int((4*N_f)+20) #Criterio aliasing: M > 4N_f
+Q = 15 #Debe ser mayor a q y depende de el orden de interpolacion
 N = int(Q*M) #Numero de muestras totales ? (CREO QUE TIENE QUE SER UNA POTENCIA DE 2)
 
 #Campo de entrada
@@ -78,6 +77,32 @@ ax[1].set_xlabel("x en plano de observación (m)")
 ax[1].set_ylabel("y en plano de observación (m)")
 
 plt.colorbar(im, ax=ax[1], label="Intensidad normalizada")
+center_index = N // 2
+perfil_intensidad = intensidad[center_index, :]
+
+# 2. Crear las coordenadas físicas para el eje x
+# Las coordenadas x deben estar centradas en 0.
+dx_salida = (long_de_onda * z) / (N * dx_entrada)
+x_coords = np.arange(N) * dx_salida - (N * dx_salida) / 2
+
+# Gráfico del perfil de intensidad en escala lineal
+plt.figure(figsize=(10, 5))
+plt.plot(x_coords, perfil_intensidad)
+plt.title('Perfil de Intensidad a lo largo de y=0 (Escala Lineal)')
+plt.xlabel('Posición en x (m)')
+plt.ylabel('Intensidad')
+plt.grid(True)
+plt.show()
+
+# Gráfico del perfil de intensidad en escala logarítmica
+perfil_intensidad_log = np.log10(perfil_intensidad / np.max(perfil_intensidad) + 1e-6)
+plt.figure(figsize=(10, 5))
+plt.plot(x_coords, perfil_intensidad_log)
+plt.title('Perfil de Intensidad a lo largo de y=0 (Escala Logarítmica)')
+plt.xlabel('Posición en x (m)')
+plt.ylabel('log10(Intensidad)')
+plt.grid(True)
+plt.show()
 
 # Mostrar gráficos
 plt.tight_layout()
