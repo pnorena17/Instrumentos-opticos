@@ -37,3 +37,9 @@ campo_en_apertura = abertura * fase_cuadratica
 padded_array = np.zeros((N, N), dtype=complex)
 min_index = (N-M)//2
 padded_array[min_index : min_index + M, min_index : min_index + M] = campo_en_apertura
+
+#Ahora, debemos realizar la transformada de Fourier de 2 dimensiones
+difraccion_fft = np.fft.fft2(padded_array)
+centrar_fft = np.fft.fftshift(difraccion_fft)
+
+campo_difraccion = centrar_fft * np.exp(-1j * (np.pi / (4 * Q**2 * N_f)) * (X**2 + Y**2))
