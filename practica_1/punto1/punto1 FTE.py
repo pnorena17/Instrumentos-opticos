@@ -5,18 +5,17 @@ import matplotlib.pyplot as plt
 long_de_onda = 650*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo: 650 nm
 #Por decir, usaremos de abertura un cuadrado de lado l
 l = 1*(10**(-3)) #(en metros) Usamos dimesión máxima: 10 cm
-z = 0.1
+z = 1
 
 ##################  MÉTODO POR FUNCION DE TRANSFERENCIA EXACTA    ######################################################33
 
 #Creamos las variables
-N_f = (l/2)**2/(long_de_onda*z) #Numero de Fresnel
-M = int((1000*N_f))
+M = 256
 
 if M%2 == 0:
-    N = 4*M
+    N = 8*M
 else:
-    N = 4*M +1 
+    N = 8*M +1 
     
 abertura = np.ones((M,M), dtype=complex)
 padded_array = np.zeros((N, N), dtype=complex)
@@ -26,13 +25,13 @@ padded_array[min_index : min_index + M, min_index : min_index + M] = abertura
 dx = l/M # Tamaño del píxel en la apertura
 L=l*N/M # Tamaño total de la cuadrícula computacional
 
-x = np.arange(-N/2, (N/2) - 1, N) * dx
-y = np.arange(-N/2, (N/2) - 1, N) * dx
+x = (np.arange(N) - N/2) * dx
+y = (np.arange(N) - N/2) * dx
 X, Y = np.meshgrid(x, y)
 
 df_x = 1/L # Espaciado en el dominio de la frecuencia
-p = np.linspace(-N/2, (N/2) - 1, N) * df_x
-q = np.linspace(-N/2, (N/2) - 1, N) * df_x
+p = (np.arange(N) - N/2) * df_x
+q = (np.arange(N) - N/2) * df_x
 P, Q = np.meshgrid(p, q)
 
 f_max = M/L #Criterio de Aliasing
@@ -60,7 +59,7 @@ CampoSalida = np.fft.ifft2(shift_A) #inversa de fourier
 intensidad = abs(CampoSalida)**2
 max_intensidad = np.max(intensidad)
 if max_intensidad > 0:
-    intensidad_log = np.log1p(intensidad / max_intensidad * 1)
+    intensidad_log = np.log1p(intensidad / max_intensidad * 1000)
     intensidad_norm = intensidad_log / np.max(intensidad_log)
 else:
     intensidad_norm = intensidad
