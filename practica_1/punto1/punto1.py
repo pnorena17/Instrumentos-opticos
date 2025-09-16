@@ -7,7 +7,7 @@ long_de_onda = 650*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo:
 l = 1*(10**(-3)) #(en metros) Usamos dimesión máxima: 1 mm
 z_max = (l/2)**2/(long_de_onda) #(en metros) Distancia máxima de la pantalla, para que cumpla criterio de frenel
 #z = z_max - 0.050 #(En metros) La disminuimos 5 cm para evitar criticidad.
-z=0.1
+z=1
 #PODRÍAMOS REVISAR QUE z SEA POSITIVO, POR SI ALGO
 
 ##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################33
@@ -53,7 +53,7 @@ campo_difraccion = centrar_fft * fase_cuadratica_salida #Este es U[n,m,z]
 intensidad = abs(centrar_fft)**2
 max_intensidad = np.max(intensidad)
 if max_intensidad > 0:
-    intensidad_log = np.log1p(intensidad / max_intensidad * 50)
+    intensidad_log = np.log1p(intensidad / max_intensidad * 10)
     intensidad_norm = intensidad_log / np.max(intensidad_log)
 else:
     intensidad_norm = intensidad
