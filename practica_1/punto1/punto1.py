@@ -20,12 +20,13 @@ N = int(Q*M) #Numero de muestras totales ? (CREO QUE TIENE QUE SER UNA POTENCIA 
 
 #Campo de entrada
 dx_entrada = l/M #(en metros) Dividimos la dimensión máxima de la abertura entre el numero de muestras
+L = N * dx_entrada
 
 #Creamos la matriz MxM centrada en (M/2,M/2)
 abertura = np.ones((M,M), dtype=complex)    #Esta es U[n_0,m_0,0]
 
-k = np.linspace(0, M - 1, M) * dx_entrada
-p = np.linspace(0, M - 1, M) * dx_entrada
+k = np.linspace(-M/2, (M/2) - 11, M) * dx_entrada
+p = np.linspace(-M/2, (M/2) - 1, M) * dx_entrada
 K, P = np.meshgrid(k, p)
 
 #Calculamos la matriz de fase cuadrática
@@ -42,8 +43,8 @@ padded_array[min_index : min_index + M, min_index : min_index + M] = campo_en_ap
 difraccion_fft = np.fft.fft2(padded_array)
 centrar_fft = np.fft.fftshift(difraccion_fft) #Esta es U"[n,m,z]
 
-x = np.linspace(0, N - 1, N) * dx_entrada
-y = np.linspace(0, N - 1, N) * dx_entrada
+x = np.linspace(-N/2, (N/2) - 1, N) * dx_entrada
+y = np.linspace(-N/2, (N/2) - 1, N) * dx_entrada
 X, Y = np.meshgrid(x, y)
 
 fase_cuadratica_salida = np.exp(1j * (np.pi / (4 * Q**2 * N_f)) * ((X-N/2)**2 + (Y-N/2)**2))
@@ -62,8 +63,8 @@ intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la in
 
 fig, ax = plt.subplots(1,2,figsize=(12,6))
 
-cuadrado = plt.Rectangle((1 - 10 / 2, 1 - 10 / 2), 10, 10, color = 'white')
-ax[0].add_patch(cuadrado)
+extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
+im0 = ax[0].imshow(np.abs(padded_array), cmap='gray', extent=extent)
 ax[0].set_title("Plano de Difracción")
 ax[0].set_xlabel("x en plano de difracción (m)")
 ax[0].set_ylabel("y en plano de difracción (m)")
@@ -77,10 +78,14 @@ ax[1].set_xlabel("x en plano de observación (m)")
 ax[1].set_ylabel("y en plano de observación (m)")
 
 plt.colorbar(im, ax=ax[1], label="Intensidad normalizada")
+# Mostrar gráficos
+plt.tight_layout()
+plt.show()
+
 center_index = N // 2
 perfil_intensidad = intensidad[center_index, :]
 
-# 2. Crear las coordenadas físicas para el eje x
+# Crear las coordenadas físicas para el eje x
 # Las coordenadas x deben estar centradas en 0.
 dx_salida = (long_de_onda * z) / (N * dx_entrada)
 x_coords = np.arange(N) * dx_salida - (N * dx_salida) / 2
@@ -104,6 +109,3 @@ plt.ylabel('log10(Intensidad)')
 plt.grid(True)
 plt.show()
 
-# Mostrar gráficos
-plt.tight_layout()
-plt.show()
