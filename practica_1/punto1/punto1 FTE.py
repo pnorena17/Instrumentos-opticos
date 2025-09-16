@@ -78,8 +78,8 @@ ax[0].set_aspect('equal')
 
 im1 = ax[1].imshow(intensidad_norm, extent=extent, cmap="gray")
 ax[1].set_title("Patrón de Difracción")
-ax[1].set_xlabel("x en plano de observación (m)")
-ax[1].set_ylabel("y en plano de observación (m)")
+ax[1].set_xlabel("x en plano de observación (mm)")
+ax[1].set_ylabel("y en plano de observación (mm)")
 plt.colorbar(im1, ax=ax[1], label="Intensidad normalizada")
 
 center_index = N // 2
