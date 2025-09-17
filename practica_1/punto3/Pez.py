@@ -80,7 +80,7 @@ campo_difraccion = centrar_fft * fase_cuadratica_salida #Este es U[n,m,z]
 intensidad = abs(centrar_fft)**2
 max_intensidad = np.max(intensidad)
 if max_intensidad > 0:
-    intensidad_log = np.log1p(intensidad / max_intensidad * 10)
+    intensidad_log = np.log1p(intensidad / max_intensidad * 100)
     intensidad_norm = intensidad_log / np.max(intensidad_log)
 else:
     intensidad_norm = intensidad
