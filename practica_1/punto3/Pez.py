@@ -21,11 +21,9 @@ def cargar_imagen(ruta, M):
 #En primer lugar, definimos la abertura y longitud de onda
 long_de_onda = 650*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo: 650 nm
 #Por decir, usaremos de abertura un cuadrado de lado l
-l = 1*(10**(-5)) #(en metros) Usamos dimesión máxima: 1 mm
-z_max = (l/2)**2/(long_de_onda) #(en metros) Distancia máxima de la pantalla, para que cumpla criterio de frenel
-#z = z_max - 0.050 #(En metros) La disminuimos 5 cm para evitar criticidad.
-z=1
-#PODRÍAMOS REVISAR QUE z SEA POSITIVO, POR SI ALGO
+l = 1*(10**(-5)) #(en metros) Usamos dimesión máxima
+z=0.4
+
 
 ##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################33
 
@@ -34,7 +32,7 @@ N_f = (l/2)**2/(long_de_onda*z) #Numero de Fresnel, deber ser mayor a 1 para que
 
 M = 64 #Criterio aliasing: M > 4N_f
 
-assert M > 4*N_f, "No cumple ele criterio de Aliasing"
+assert M > 4*N_f, "No cumple el criterio de Aliasing"
     
 
 Q = 5 #Debe ser mayor a q y depende de el orden de interpolacion
@@ -45,7 +43,7 @@ dx_entrada = l/M #(en metros) Dividimos la dimensión máxima de la abertura ent
 L = N * dx_entrada
 
 
-ruta_imagen=r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Transm_E06.png"
+ruta_imagen=r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\images\girl.png"
 
 
 
@@ -80,7 +78,7 @@ campo_difraccion = centrar_fft * fase_cuadratica_salida #Este es U[n,m,z]
 intensidad = abs(centrar_fft)**2
 max_intensidad = np.max(intensidad)
 if max_intensidad > 0:
-    intensidad_log = np.log1p(intensidad / max_intensidad * 10)
+    intensidad_log = np.log1p(intensidad / max_intensidad * 100)
     intensidad_norm = intensidad_log / np.max(intensidad_log)
 else:
     intensidad_norm = intensidad
