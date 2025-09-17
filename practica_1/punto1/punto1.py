@@ -7,7 +7,7 @@ long_de_onda = 650*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo:
 l = 1*(10**(-5)) #(en metros) Usamos dimesión máxima: 1 mm
 z_max = (l/2)**2/(long_de_onda) #(en metros) Distancia máxima de la pantalla, para que cumpla criterio de frenel
 #z = z_max - 0.050 #(En metros) La disminuimos 5 cm para evitar criticidad.
-z=1
+z=0.1
 #PODRÍAMOS REVISAR QUE z SEA POSITIVO, POR SI ALGO
 
 ##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################33
@@ -30,8 +30,8 @@ L = N * dx_entrada
 #Creamos la matriz MxM centrada en (M/2,M/2)
 abertura = np.ones((M,M), dtype=complex)    #Esta es U[n_0,m_0,0]
 
-k = np.linspace(-M/2, (M/2) - 11, M) * dx_entrada
-p = np.linspace(-M/2, (M/2) - 1, M) * dx_entrada
+k = (np.arange(M) - M/2) * dx_entrada
+p = (np.arange(M) - M/2) * dx_entrada
 K, P = np.meshgrid(k, p)
 
 #Calculamos la matriz de fase cuadrática
@@ -48,14 +48,16 @@ padded_array[min_index : min_index + M, min_index : min_index + M] = campo_en_ap
 difraccion_fft = np.fft.fft2(padded_array)
 centrar_fft = np.fft.fftshift(difraccion_fft) #Esta es U"[n,m,z]
 
-x = np.linspace(-N/2, (N/2) - 1, N) * dx_entrada
-y = np.linspace(-N/2, (N/2) - 1, N) * dx_entrada
+dx_salida = long_de_onda*z/(dx_entrada*N)
+
+x = np.linspace(-N/2, (N/2) - 1, N) * dx_salida
+y = np.linspace(-N/2, (N/2) - 1, N) * dx_salida
 X, Y = np.meshgrid(x, y)
 
-fase_cuadratica_salida = np.exp(1j * (np.pi / (4 * Q**2 * N_f)) * ((X-N/2)**2 + (Y-N/2)**2))
+fase_cuadratica_salida = np.exp(1j * (np.pi / (4 * Q**2 * N_f)) * ((X-N/2)**2 + (Y-N/2)**2))/(1j*long_de_onda*z)
 campo_difraccion = centrar_fft * fase_cuadratica_salida #Este es U[n,m,z]
 
-intensidad = abs(centrar_fft)**2
+intensidad = abs(campo_difraccion)**2
 max_intensidad = np.max(intensidad)
 if max_intensidad > 0:
     intensidad_log = np.log1p(intensidad / max_intensidad * 10)
@@ -76,7 +78,7 @@ ax[0].set_ylabel("y en plano de difracción (m)")
 ax[0].set_facecolor('black') 
 ax[0].set_aspect('equal')
 
-extent = [x.min()*z, x.max()*z, y.min()*z, y.max()*z]
+extent = [x.min(), x.max(), y.min(), y.max()]
 im = ax[1].imshow(intensidad_log, extent=extent, cmap="gray")
 ax[1].set_title("Patrón de Difracción")
 ax[1].set_xlabel("x en plano de observación (m)")
