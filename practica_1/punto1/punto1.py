@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 #En primer lugar, definimos la abertura y longitud de onda
 long_de_onda = 650*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo: 650 nm
 #Por decir, usaremos de abertura un cuadrado de lado l
-l = 1*(10**(-3)) #(en metros) Usamos dimesión máxima: 1 mm
+l = 1*(10**(-5)) #(en metros) Usamos dimesión máxima: 1 mm
 z_max = (l/2)**2/(long_de_onda) #(en metros) Distancia máxima de la pantalla, para que cumpla criterio de frenel
 #z = z_max - 0.050 #(En metros) La disminuimos 5 cm para evitar criticidad.
 z=1
@@ -14,8 +14,13 @@ z=1
 
 # Ahora, crearemos las variables que necesitamos
 N_f = (l/2)**2/(long_de_onda*z) #Numero de Fresnel, deber ser mayor a 1 para que cumpla la aproximación
-M = int((4*N_f)+20) #Criterio aliasing: M > 4N_f
-Q = 15 #Debe ser mayor a q y depende de el orden de interpolacion
+
+M = 64 #Criterio aliasing: M > 4N_f
+
+assert M > 4*N_f, "No cumple ele criterio de Aliasing"
+    
+
+Q = 5 #Debe ser mayor a q y depende de el orden de interpolacion
 N = int(Q*M) #Numero de muestras totales ? (CREO QUE TIENE QUE SER UNA POTENCIA DE 2)
 
 #Campo de entrada
@@ -63,7 +68,7 @@ intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la in
 
 fig, ax = plt.subplots(1,2,figsize=(12,6))
 
-extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
+extent = [-l/2 * 1e3, l/2 * 1e3, -l/2 * 1e3, l/2 * 1e3]
 im0 = ax[0].imshow(np.abs(padded_array), cmap='gray', extent=extent)
 ax[0].set_title("Plano de Difracción")
 ax[0].set_xlabel("x en plano de difracción (m)")
