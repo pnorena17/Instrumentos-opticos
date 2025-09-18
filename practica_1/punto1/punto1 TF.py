@@ -8,19 +8,20 @@ N = 1080    #Resolución mínima de pixeles del detector DFM 37UX290-ML
 dx = 2.9e-6 #(en metros) Pixel size del detector (2.9 um)
 
 ##Variables modificables
-z = 0.1     #(en metros) Distancia entre pantalla y abertura
+z = 0.5     #(en metros) Distancia entre pantalla y abertura
 
 ##Variables de la abertura
 #Por ejemplo, usaremos de abertura un cuadrado de lado l
-l = 1e-5    #(en metros) Usamos dimesión máxima (1 mm)
-M = N//4     #Muestreo de nuestra abertura
-dx_0 = l/M  #(en metros) Tamaño de pixel en nuestra abertura
+l = 1e-3    #(en metros) Usamos dimesión máxima (1 mm)
+dx_0 = long_de_onda*z/(N*dx)  #(en metros) Tamaño de pixel en nuestra abertura
+M = 2*int(l/dx_0)   #Muestreo de nuestra abertura
+L = N*dx_0
 
 #Verificaciones antes de iniciar el cálculo
 z_min = M*(dx_0**2)/long_de_onda #(en metros) Distancia mínima de la pantalla para que podamos usar la Transformada de Fresnel
 assert z > z_min, "No cumple el criterio de z para TF"
 
-##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################33
+##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################
 
 #Creamos el espacio físico de la abertura centrada en (M/2,M/2)
 n_0 = (np.arange(M) - M/2) * dx_0
@@ -72,7 +73,7 @@ intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la in
 #Graficamos
 fig, ax = plt.subplots(1,2,figsize=(10,5))
 
-extent = [-l/2 * 1e3, l/2 * 1e3, -l/2 * 1e3, l/2 * 1e3]
+extent = [-L/2, L/2, -L/2, L/2]
 im0 = ax[0].imshow(np.abs(matriz_con_relleno), cmap='gray', extent=extent)
 ax[0].set_title("Plano de Difracción")
 ax[0].set_xlabel("x en plano de difracción (m)")
