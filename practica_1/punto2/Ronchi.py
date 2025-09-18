@@ -1,68 +1,77 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-#En primer lugar, definimos la abertura y longitud de onda
-long_de_onda = 633*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo: 650 nm
-#Por decir, usaremos de abertura un cuadrado de lado l
-l = 1*(10**(-3)) #(en metros) Usamos dimesión máxima: 1 mm
-z_max = (l/2)**2/(long_de_onda) #(en metros) Distancia máxima de la pantalla, para que cumpla criterio de frenel
-#z = z_max - 0.050 #(En metros) La disminuimos 5 cm para evitar criticidad.
-z=1
-#PODRÍAMOS REVISAR QUE z SEA POSITIVO, POR SI ALGO
+#Definimos las variables con las que vamos a trabajar
+##Variables ya establecidas 
+long_de_onda = 633e-9 #(en metros) Usamos la longitud de onda del  rojo: 633 nm
+N = 1200    #Resolución mínima de pixeles del detector DFM 37UX290-ML
+dx = 3e-6 #(en metros) Pixel size del detector (2.9 um)
 
-##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################33
+##Variables modificables
+z = 0.5     #(en metros) Distancia entre pantalla y abertura
 
-# Ahora, crearemos las variables que necesitamos
-N_f = (l/2)**2/(long_de_onda*z) #Numero de Fresnel, deber ser mayor a 1 para que cumpla la aproximación
-M = 2**8 #Criterio aliasing: M > 4N_f
+##Variables de la abertura
+#Por ejemplo, usaremos de abertura un cuadrado de lado l
+l = 1e-3    #(en metros) Usamos dimesión máxima (1 mm)
+dx_0 = long_de_onda*z/(N*dx)  #(en metros) Tamaño de pixel en nuestra abertura
+M = 2*int(l/dx_0)   #Muestreo de nuestra abertura
+L = N*dx_0
 
+print(M)
 
-assert M > 4*N_f, "No cumple ele criterio de Aliasing"
+#Verificaciones antes de iniciar el cálculo
+z_min = M*(dx_0**2)/long_de_onda #(en metros) Distancia mínima de la pantalla para que podamos usar la Transformada de Fresnel
+#assert z > z_min, "No cumple el criterio de z para TF"
 
-Q = 5 #Debe ser mayor a q y depende de el orden de interpolacion
-N = int(Q*M) #Numero de muestras totales ? (CREO QUE TIENE QUE SER UNA POTENCIA DE 2)
+##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################
 
-#Campo de entrada
-dx_entrada = l/M #(en metros) Dividimos la dimensión máxima de la abertura entre el numero de muestras
-L = N * dx_entrada
+#Creamos el espacio físico de la abertura centrada en (M/2,M/2)
+n_0 = (np.arange(M) - M/2) * dx_0
+m_0 = (np.arange(M) - M/2) * dx_0
+N_0, M_0 = np.meshgrid(n_0, m_0)
 
-#Creamos la matriz MxM centrada en (M/2,M/2)
-   #Esta es U[n_0,m_0,0]
+#Creamos la matriz MxM para la abertura
+iluminacion = np.ones((M,M), dtype=complex)                  #Esta es U[n_0,m_0,0]
 
-k = (np.arange(M) - M/2)* dx_entrada
-p = (np.arange(M) - M/2) * dx_entrada
-K, P = np.meshgrid(k, p)
-
+#Creamos la Rejilla Ronchi
 lineas_mm = 10
-p = 1/(lineas_mm / 1e-3)
+periodo = 1/(lineas_mm / 1e-3)
 fraccion_abierto = 0.5
-grating_x = (((K % p) < (fraccion_abierto * p))).astype(float)
-abertura = grating_x.astype(complex) 
+rejilla_x = (((N_0 % periodo) < (fraccion_abierto * periodo))).astype(float)
+transmitancia = rejilla_x.astype(complex) 
+
+#Modificamos la onda de entrada por la transmitancia encontrada
+campo_entrada = iluminacion * transmitancia
 
 #Calculamos la matriz de fase cuadrática
-fase_cuadratica_entrada = np.exp(1j * (np.pi*4*N_f / (M**2)) * ((K-M/2)**2 + ((P-M/2)**2)))
+k = 2*np.pi/long_de_onda
+fase_cuadratica_entrada = np.exp(1j * (k / 2*z) * ((N_0)**2 + ((M_0)**2)))
 
-#Multiplicación punto a punto
-campo_en_apertura = abertura * fase_cuadratica_entrada  #Este es U'[n_0,m_0,z]
+#Multiplicación campo de entrada por la fase de entrada
+campo_en_apertura = campo_entrada * fase_cuadratica_entrada    #Este es U'[n_0,m_0,0]
 
-padded_array = np.zeros((N, N), dtype=complex)
-min_index = (N-M)//2
-padded_array[min_index : min_index + M, min_index : min_index + M] = campo_en_apertura
+#Hacemos la operación para rellenar de 0 la matriz NxN por fuera de la MxM
+matriz_con_relleno = np.zeros((N, N), dtype=complex)
+min_indice = (N-M)//2
+matriz_con_relleno[min_indice : min_indice + M, min_indice : min_indice + M] = campo_en_apertura
 
 #Ahora, debemos realizar la transformada de Fourier de 2 dimensiones
-difraccion_fft = np.fft.fft2(padded_array)
-centrar_fft = np.fft.fftshift(difraccion_fft) #Esta es U"[n,m,z]
+difraccion_fft = np.fft.fft2(matriz_con_relleno)
+centrar_fft = dx**2 * np.fft.fftshift(difraccion_fft)          #Esta es U"[n,m,z]
 
-x = np.linspace(-N/2, (N/2) - 1, N) * dx_entrada
-y = np.linspace(-N/2, (N/2) - 1, N) * dx_entrada
-X, Y = np.meshgrid(x, y)
+#Creamos el espacio físico de la pantalla centrado en (N/2,N/2)
+n = np.linspace(-N/2, (N/2) - 1, N) * dx
+m = np.linspace(-N/2, (N/2) - 1, N) * dx
+X, Y = np.meshgrid(n, m)  #Cambio de variable para evitar confusiones con N y M
 
+fase_cuadratica_salida = (np.exp(1j*k*z) / (1j*long_de_onda*z)) * np.exp( 1j*(k/(2*z)) * ((X)**2 +(Y)**2)) 
+campo_difraccion = centrar_fft * fase_cuadratica_salida        #Este es U[n,m,z]
 
-fase_cuadratica_salida = np.exp(1j * (np.pi / (4 * Q**2 * N_f)) * ((X-N/2)**2 + (Y-N/2)**2))
-campo_difraccion = centrar_fft * fase_cuadratica_salida #Este es U[n,m,z]
+#Calculamos la intensidad para graficar el patrón
+intensidad = abs(campo_difraccion)**2
+max_intensidad = np.max(intensidad)     #Encontramos la intensidad máxima para normalizar
 
-intensidad = abs(centrar_fft)**2
-max_intensidad = np.max(intensidad)
+#Buscamos una intensidad que se vea bien el patrón
 if max_intensidad > 0:
     intensidad_log = np.log1p(intensidad / max_intensidad * 100)
     intensidad_norm = intensidad_log / np.max(intensidad_log)
@@ -72,19 +81,20 @@ else:
 #Aplicamos escala logarítmica (para visualizar detalles en zonas de baja intensidad)
 intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la intensidad para evitar log(0), que es -infinito
 
-fig, ax = plt.subplots(1,2,figsize=(12,6))
 
-extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
-im0 = ax[0].imshow(np.abs(padded_array), cmap='gray', extent=extent)
+#Graficamos
+fig, ax = plt.subplots(1,2,figsize=(10,5))
+
+extent = [-L/2, L/2, -L/2, L/2]
+im0 = ax[0].imshow(np.abs(matriz_con_relleno), cmap='gray', extent=extent)
 ax[0].set_title("Plano de Difracción")
 ax[0].set_xlabel("x en plano de difracción (m)")
 ax[0].set_ylabel("y en plano de difracción (m)")
 ax[0].set_facecolor('black') 
 ax[0].set_aspect('equal')
 
-
-extent = [x.min(), x.max(), y.min(), y.max()]
-im = ax[1].imshow(intensidad_log, extent=extent, cmap="gray")
+extent = [m.min(), m.max(), n.min(), n.max()]
+im = ax[1].imshow(intensidad_norm, extent=extent, cmap="gray")
 ax[1].set_title("Patrón de Difracción")
 ax[1].set_xlabel("x en plano de observación (m)")
 ax[1].set_ylabel("y en plano de observación (m)")
@@ -93,6 +103,3 @@ plt.colorbar(im, ax=ax[1], label="Intensidad normalizada")
 # Mostrar gráficos
 plt.tight_layout()
 plt.show()
-
-
-
