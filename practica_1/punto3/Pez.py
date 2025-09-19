@@ -5,18 +5,19 @@ from PIL import Image
 
 
 #Primero leemos la imagen en la ruta y la convierte en una matriz MxM
-ruta=r"C:\Users\david\OneDrive\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Transm_E06.png"
+ruta=r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\images\Transm_E06.png"
 
 img = Image.open(ruta).convert("L") #la convertimos a blanco y negro
 arr = np.array(img)/255.0 #la normalizamos [0,1]
 umbral = 0.5
 M_size = np.shape((arr))
-if M_size[0] =! M_size[1]:
-    M = min(M_size[0],M_size[1]])
-    
+if M_size[0] != M_size[1]:
+    M = min(M_size[0],M_size[1])
+    imagen = arr[(M_size[0]-M)/2 : (M_size[0]-M)/2 + M, (M_size[1]-M)/2 : (M_size[1]-M)/2 + M]
 else:
     M = M_size[0]
-transmitancia = (arr > umbral).astype(complex)#comparamos los valores de pixel con el umbral(nos da una matriz booleana)
+    imagen = arr
+transmitancia = (imagen > umbral).astype(complex)#comparamos los valores de pixel con el umbral(nos da una matriz booleana)
 
 
 #Definimos las variables con las que vamos a trabajar
