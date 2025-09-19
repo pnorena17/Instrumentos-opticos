@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 #En primer lugar, definimos la abertura y longitud de 
 
 
-long_de_onda = 650*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo: 650 nm
+long_de_onda = 633*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo: 650 nm
 N = 1080 #pixeles de la camara
 dx = 2.9*(10**(-6)) # Espaciado en el dominio espacial 2,9um(cuadrada)
 L = N*dx #Dimensiones del sensor
 
-l = 0.0001 #(diemnsiones de la apertura cuadrada) Usamos dimensión máxima: 1 cm
+l = 0.04 #(diemnsiones de la apertura cuadrada) Usamos dimensión máxima: 1 cm
 M = int((l/L)*N)
-
+print(M)
 df = 1/L
 
 
