@@ -4,16 +4,19 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 
-def cargar_imagen(ruta, M):
-    #Lee la imagen en la ruta y la convierte en una matriz MxM
-    img = Image.open(ruta).convert("L") #la convertimos a blanco y negro
-    img = img.resize((M,M)) #la reescalamos a MxM
-    arr = np.array(img)/255.0 #la normalizamos [0,1]
-    umbral = 0.5
-    arr_bin = (arr > umbral).astype(complex)#comparamos los valores de pixel con el umbral(nos da una matriz booleana)
-    #luego con astype(complex) convertimos estos booleanos en complejos 
-    return arr_bin
+#Primero leemos la imagen en la ruta y la convierte en una matriz MxM
+ruta=r"C:\Users\david\OneDrive\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Transm_E06.png"
 
+img = Image.open(ruta).convert("L") #la convertimos a blanco y negro
+arr = np.array(img)/255.0 #la normalizamos [0,1]
+umbral = 0.5
+M_size = np.shape((arr))
+if M_size[0] =! M_size[1]:
+    M = min(M_size[0],M_size[1]])
+    
+else:
+    M = M_size[0]
+transmitancia = (arr > umbral).astype(complex)#comparamos los valores de pixel con el umbral(nos da una matriz booleana)
 
 
 #Definimos las variables con las que vamos a trabajar
@@ -23,15 +26,13 @@ N = 1080    #Resolución mínima de pixeles del detector DFM 37UX290-ML
 dx = 2.9e-6 #(en metros) Pixel size del detector (2.9 um)
 
 ##Variables modificables
-z = 0.1     #(en metros) Distancia entre pantalla y abertura
+z = 0.2     #(en metros) Distancia entre pantalla y abertura
 
-##Variables de la abertura
-#Por ejemplo, usaremos de abertura un cuadrado de lado l
-l = 1e-3    #(en metros) Usamos dimesión máxima (1 mm)
-dx_0 = long_de_onda*z/(N*dx)  #(en metros) Tamaño de pixel en nuestra abertura
-M = 2*int(l/dx_0)   #Muestreo de nuestra abertura
+##Variables de la abertura, ya están establecidad
+l = 5.8e-3    #(en metros) 5.8 mm
+dx_0 = l/M
 L = N*dx_0
-#M=64
+
 #Verificaciones antes de iniciar el cálculo
 z_min = M*(dx_0**2)/long_de_onda #(en metros) Distancia mínima de la pantalla para que podamos usar la Transformada de Fresnel
 assert z > z_min, "No cumple el criterio de z para TF"
@@ -43,11 +44,11 @@ n_0 = (np.arange(M) - M/2) * dx_0
 m_0 = (np.arange(M) - M/2) * dx_0
 N_0, M_0 = np.meshgrid(n_0, m_0)
 
-
-ruta_imagen=r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Transm_E06.png"
+#Creamos la matriz MxM para la abertura
+iluminacion = np.ones((M,M), dtype=complex)   
 
 #Creamos la matriz MxM para la abertura
-campo_entrada = cargar_imagen(ruta_imagen, M)                #Esta es U[n_0,m_0,0]
+campo_entrada = iluminacion*transmitancia                #Esta es U[n_0,m_0,0]
 
 #Calculamos la matriz de fase cuadrática
 k = 2*np.pi/long_de_onda
@@ -110,25 +111,4 @@ plt.colorbar(im, ax=ax[1], label="Intensidad normalizada")
 plt.tight_layout()
 plt.show()
 
-center_index = N // 2
-perfil_intensidad = intensidad[center_index, :]
-
-# Gráfico del perfil de intensidad en escala lineal
-plt.figure(figsize=(10, 5))
-plt.plot(m, perfil_intensidad)
-plt.title('Perfil de Intensidad a lo largo de y=0 (Escala Lineal)')
-plt.xlabel('Posición en x (m)')
-plt.ylabel('Intensidad')
-plt.grid(True)
-plt.show()
-
-# Gráfico del perfil de intensidad en escala logarítmica
-perfil_intensidad_log = np.log10(perfil_intensidad / np.max(perfil_intensidad) + 1e-6)
-plt.figure(figsize=(10, 5))
-plt.plot(m, perfil_intensidad_log)
-plt.title('Perfil de Intensidad a lo largo de y=0 (Escala Logarítmica)')
-plt.xlabel('Posición en x (m)')
-plt.ylabel('log10(Intensidad)')
-plt.grid(True)
-plt.show()
 
