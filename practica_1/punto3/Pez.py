@@ -28,7 +28,7 @@ N = 1080    #Resolución mínima de pixeles del detector DFM 37UX290-ML
 dx = 2.9e-6 #(en metros) Pixel size del detector (2.9 um)
 
 ##Variables modificables
-z = 10e-2     #(en metros) Distancia entre pantalla y abertura
+z = 13e-2     #(en metros) Distancia entre pantalla y abertura
 
 ##Variables de la abertura, ya están establecidad
 l = 5.8e-3    #(en metros) 5.8 mm
@@ -89,6 +89,7 @@ else:
 #Aplicamos escala logarítmica (para visualizar detalles en zonas de baja intensidad)
 intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la intensidad para evitar log(0), que es -infinito
 
+intensidad_norm = intensidad/max_intensidad
 
 #Graficamos
 fig, ax = plt.subplots(1,2,figsize=(10,5))
