@@ -8,7 +8,7 @@ N = 1200    #Resolución mínima de pixeles del detector DFM 37UX290-ML
 dx = 3e-6 #(en metros) Pixel size del detector (2.9 um)
 
 ##Variables modificables
-z = 0.5     #(en metros) Distancia entre pantalla y abertura
+z = 0.0316     #(en metros) Distancia entre pantalla y abertura
 
 ##Variables de la abertura
 #Por ejemplo, usaremos de abertura un cuadrado de lado l
@@ -25,13 +25,13 @@ z_min = M*(dx_0**2)/long_de_onda #(en metros) Distancia mínima de la pantalla p
 
 ##################  MÉTODO POR TRANSFORMADA DE FRESNEL    ######################################################
 
-#Creamos el espacio físico de la abertura centrada en (M/2,M/2)
-n_0 = (np.arange(M) - M/2) * dx_0
-m_0 = (np.arange(M) - M/2) * dx_0
+#Creamos el espacio físico de la rejilla infinita centrada en (N/2, N/2)
+n_0 = (np.arange(N) - N/2) * dx_0
+m_0 = (np.arange(N) - N/2) * dx_0
 N_0, M_0 = np.meshgrid(n_0, m_0)
 
 #Creamos la matriz MxM para la abertura
-iluminacion = np.ones((M,M), dtype=complex)                  #Esta es U[n_0,m_0,0]
+iluminacion = np.ones((N,N), dtype=complex)                  #Esta es U[n_0,m_0,0]
 
 #Creamos la Rejilla Ronchi
 lineas_mm = 10
@@ -45,18 +45,13 @@ campo_entrada = iluminacion * transmitancia
 
 #Calculamos la matriz de fase cuadrática
 k = 2*np.pi/long_de_onda
-fase_cuadratica_entrada = np.exp(1j * (k / 2*z) * ((N_0)**2 + ((M_0)**2)))
+fase_cuadratica_entrada = np.exp(1j * (k / (2*z)) * ((N_0)**2 + ((M_0)**2)))
 
 #Multiplicación campo de entrada por la fase de entrada
 campo_en_apertura = campo_entrada * fase_cuadratica_entrada    #Este es U'[n_0,m_0,0]
 
-#Hacemos la operación para rellenar de 0 la matriz NxN por fuera de la MxM
-matriz_con_relleno = np.zeros((N, N), dtype=complex)
-min_indice = (N-M)//2
-matriz_con_relleno[min_indice : min_indice + M, min_indice : min_indice + M] = campo_en_apertura
-
 #Ahora, debemos realizar la transformada de Fourier de 2 dimensiones
-difraccion_fft = np.fft.fft2(matriz_con_relleno)
+difraccion_fft = np.fft.fft2(campo_en_apertura)
 centrar_fft = dx**2 * np.fft.fftshift(difraccion_fft)          #Esta es U"[n,m,z]
 
 #Creamos el espacio físico de la pantalla centrado en (N/2,N/2)
@@ -86,7 +81,7 @@ intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la in
 fig, ax = plt.subplots(1,2,figsize=(10,5))
 
 extent = [-L/2, L/2, -L/2, L/2]
-im0 = ax[0].imshow(np.abs(matriz_con_relleno), cmap='gray', extent=extent)
+im0 = ax[0].imshow(np.abs(campo_en_apertura), cmap='gray', extent=extent)
 ax[0].set_title("Plano de Difracción")
 ax[0].set_xlabel("x en plano de difracción (m)")
 ax[0].set_ylabel("y en plano de difracción (m)")
