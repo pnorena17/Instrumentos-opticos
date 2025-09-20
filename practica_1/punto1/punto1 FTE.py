@@ -6,10 +6,10 @@ import matplotlib.pyplot as plt
 
 long_de_onda = 633*(10**(-9)) #(en metros) Usamos la longitud de onda del  rojo: 650 nm
 N = 1080 #pixeles de la camara
-dx = 2.9*(10**(-6)) # Espaciado en el dominio espacial 2,9um(cuadrada)
+dx = 6.9*(10**(-6)) # Espaciado en el dominio espacial 2,9um(cuadrada)
 L = N*dx #Dimensiones del sensor
 
-l = 0.04 #(diemnsiones de la apertura cuadrada) Usamos dimensión máxima: 1 cm
+l = 0.0001 #(diemnsiones de la apertura cuadrada) Usamos dimensión máxima: 1 cm
 M = int((l/L)*N)
 print(M)
 df = 1/L
@@ -24,7 +24,7 @@ df = 1/L
 #    N = 12*M +1 
      # Espaciado en el dominio de la frecuencia (cuadrada)
      
-z = 0.04
+z = 0.1
 z_max = M*(dx**2)/long_de_onda
 print(z_max, M)
 #assert z <= z_max, "No cumple el criterio de z para TF"
@@ -66,7 +66,7 @@ campo_en_apertura = padded_array
 f_max = M*df #Criterio de Aliasing
 
 #Transformada de Fourier
-difraccion_fft = np.fft.fft2(campo_en_apertura)* dx**2
+difraccion_fft = np.fft.fft2(campo_en_apertura)
 centrar_fft = dx**2 * np.fft.fftshift(difraccion_fft)
 
 #Manejo ondas evanescentes
