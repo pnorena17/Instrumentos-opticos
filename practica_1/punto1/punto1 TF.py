@@ -8,7 +8,7 @@ N = 1080    #Resolución mínima de pixeles del detector DFM 37UX290-ML
 dx = 2.9e-6 #(en metros) Pixel size del detector (2.9 um)
 
 ##Variables modificables
-z = 0.5     #(en metros) Distancia entre pantalla y abertura
+z = 0.6     #(en metros) Distancia entre pantalla y abertura
 
 ##Variables de la abertura
 #Por ejemplo, usaremos de abertura un cuadrado de lado l
@@ -33,7 +33,7 @@ campo_entrada = np.ones((M,M), dtype=complex)                  #Esta es U[n_0,m_
 
 #Calculamos la matriz de fase cuadrática
 k = 2*np.pi/long_de_onda
-fase_cuadratica_entrada = np.exp(1j * (k / 2*z) * ((N_0)**2 + ((M_0)**2)))
+fase_cuadratica_entrada = np.exp(1j * (k / (2*z)) * ((N_0)**2 + ((M_0)**2)))
 
 #Multiplicación campo de entrada por la fase de entrada
 campo_en_apertura = campo_entrada * fase_cuadratica_entrada    #Este es U'[n_0,m_0,0]
