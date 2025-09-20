@@ -12,8 +12,9 @@ arr = np.array(img)/255.0 #la normalizamos [0,1]
 umbral = 0.5
 M_size = np.shape((arr))
 if M_size[0] != M_size[1]:
-    M = min(M_size[0],M_size[1])
-    imagen = arr[(M_size[0]-M)/2 : (M_size[0]-M)/2 + M, (M_size[1]-M)/2 : (M_size[1]-M)/2 + M]
+    M = max(M_size[0],M_size[1])
+    imagen = np.zeros((M,M)) 
+    imagen[int((M-M_size[0])/2) : int((M-M_size[0])/2) + M_size[0], int((M-M_size[1])/2) : int((M-M_size[1])/2) + M_size[1]] = arr
 else:
     M = M_size[0]
     imagen = arr
@@ -27,7 +28,7 @@ N = 1080    #Resolución mínima de pixeles del detector DFM 37UX290-ML
 dx = 2.9e-6 #(en metros) Pixel size del detector (2.9 um)
 
 ##Variables modificables
-z = 0.2     #(en metros) Distancia entre pantalla y abertura
+z = 10e-2     #(en metros) Distancia entre pantalla y abertura
 
 ##Variables de la abertura, ya están establecidad
 l = 5.8e-3    #(en metros) 5.8 mm
@@ -45,7 +46,6 @@ n_0 = (np.arange(M) - M/2) * dx_0
 m_0 = (np.arange(M) - M/2) * dx_0
 N_0, M_0 = np.meshgrid(n_0, m_0)
 
-#Creamos la matriz MxM para la abertura
 iluminacion = np.ones((M,M), dtype=complex)   
 
 #Creamos la matriz MxM para la abertura
@@ -53,11 +53,11 @@ campo_entrada = iluminacion*transmitancia                #Esta es U[n_0,m_0,0]
 
 #Calculamos la matriz de fase cuadrática
 k = 2*np.pi/long_de_onda
-fase_cuadratica_entrada = np.exp(1j * (k / 2*z) * ((N_0)**2 + ((M_0)**2)))
+fase_cuadratica_entrada = np.exp(1j * (k / (2*z)) * ((N_0)**2 + ((M_0)**2)))
 
 #Multiplicación campo de entrada por la fase de entrada
 campo_en_apertura = campo_entrada * fase_cuadratica_entrada    #Este es U'[n_0,m_0,0]
-
+complex
 #Hacemos la operación para rellenar de 0 la matriz NxN por fuera de la MxM
 matriz_con_relleno = np.zeros((N, N), dtype=complex)
 min_indice = (N-M)//2
@@ -102,7 +102,7 @@ ax[0].set_facecolor('black')
 ax[0].set_aspect('equal')
 
 extent = [m.min(), m.max(), n.min(), n.max()]
-im = ax[1].imshow(intensidad_log, extent=extent, cmap="gray")
+im = ax[1].imshow(intensidad_norm, extent=extent, cmap="gray")
 ax[1].set_title("Patrón de Difracción")
 ax[1].set_xlabel("x en plano de observación (m)")
 ax[1].set_ylabel("y en plano de observación (m)")
