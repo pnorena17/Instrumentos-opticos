@@ -45,7 +45,7 @@ campo_entrada = iluminacion * transmitancia
 
 #Calculamos la matriz de fase cuadrática
 k = 2*np.pi/long_de_onda
-fase_cuadratica_entrada = np.exp(1j * (k / 2*z) * ((N_0)**2 + ((M_0)**2)))
+fase_cuadratica_entrada = np.exp(1j * (k / (2*z)) * ((N_0)**2 + ((M_0)**2)))
 
 #Multiplicación campo de entrada por la fase de entrada
 campo_en_apertura = campo_entrada * fase_cuadratica_entrada    #Este es U'[n_0,m_0,0]
