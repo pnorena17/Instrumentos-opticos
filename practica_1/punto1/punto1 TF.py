@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 #Definimos las variables con las que vamos a trabajar
 ##Variables ya establecidas 
-long_de_onda = 650e-9 #(en metros) Usamos la longitud de onda del  rojo: 650 nm
+long_de_onda = 633e-9 #(en metros) Usamos la longitud de onda del  rojo: 650 nm
 N = 1080    #Resolución mínima de pixeles del detector DFM 37UX290-ML
 dx = 2.9e-6 #(en metros) Pixel size del detector (2.9 um)
 
