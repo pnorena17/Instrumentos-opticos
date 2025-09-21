@@ -53,13 +53,13 @@ l = 2  # Longitud de la abertura
 abertura = (np.abs(X) <= l / 2) & (np.abs(Y) <= l / 2)
 U_0 = abertura.astype(np.complex128)
 
-#### Hallemos A_0
+#### Hallemos A_0 (Espectro Angular)
 
 A_0 = np.fft.fft2(U_0) * (dx**2)
 A_0sh = np.fft.fftshift(A_0)
 
 
-#### Hallemos A
+#### Hallemos A (Propagación del Espectro Angular en el dominio espectral)
 
 argumento_raiz = 1 - ((long_onda)**2 * (Fx**2 + Fy**2))
 A = A_0 * (np.exp(1j * z * k * np.sqrt(argumento_raiz)))
