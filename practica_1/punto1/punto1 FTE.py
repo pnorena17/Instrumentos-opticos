@@ -3,22 +3,23 @@ import matplotlib.pyplot as plt
 
 #### Creamos las Variables
 
-long_onda = 633e-9 
+long_onda = 633e-9 #633 nm
 k = (2*np.pi)/long_onda
 
 
-N = 800 # pixeles de la camara
-L = 10 # dimensiones del sensor
-dx = L/N # tamaño de pixel
+N = 1080 # pixeles de la camara
+dx = 3.7e-6 # tamaño de pixel (3.7 um)
+L = dx*N # dimensiones del sensor
 df = 1/L # correspondiente en el espectro
 
-z = 50000 # distancia de la abertura al detector
+z = 0.02 # distancia de la abertura al detector (4 cm)
 
 # Condiciones de buen muestreo
 
 z_max = N*(dx**2)/long_onda
-assert z <= z_max, "No cumple el criterio de z para TF"
 print(z_max)
+assert z <= z_max, "No cumple el criterio de z para FTE"
+
 
 ######### Coordenadas Espaciales
 
@@ -41,40 +42,42 @@ Fx,Fy = np.meshgrid(fx, fy)
 
 #### Abertura Circular
 
-#r_0 = 1 # 2mm
+r_0 = 1e-3 # 2mm
 #abertura = (X**2 + Y**2) <= r_0**2
-
 #U_0 = abertura.astype(np.complex128)
 
 
 #### Abertura Cuadrada
 
-l = 2  # Longitud de la abertura
+l = 2e-3  # Longitud de la abertura
 abertura = (np.abs(X) <= l / 2) & (np.abs(Y) <= l / 2)
 U_0 = abertura.astype(np.complex128)
 
 #### Hallemos A_0 (Espectro Angular)
 
-A_0 = np.fft.fft2(U_0) * (dx**2)
+A_0 = np.fft.fft2(U_0)
 A_0sh = np.fft.fftshift(A_0)
 
 
 #### Hallemos A (Propagación del Espectro Angular en el dominio espectral)
 
-argumento_raiz = 1 - ((long_onda)**2 * (Fx**2 + Fy**2))
-A = A_0 * (np.exp(1j * z * k * np.sqrt(argumento_raiz)))
-A_shift = np.fft.ifftshift(A)
+argumento_raiz = (2 * np.pi)**2 * ((1. / long_onda) ** 2 - Fx ** 2 - Fy ** 2)
+
+#Verificamos que usemos las ondas propagantes
+tmp = np.sqrt(np.abs(argumento_raiz))
+kz = np.where(argumento_raiz >= 0, tmp, 1j*tmp)
+
+A = A_0sh * (np.exp(1j * z * kz))
+A_ishift = np.fft.ifftshift(A)
 
 #### Hallemos el campo de salida U
 
-U = (np.fft.ifft2(A_shift)) * ((df)**2)
-U_shift = np.fft.fftshift(U)
+U = (np.fft.ifft2(A_ishift))
 
 ##### Hallemos la intensidad
 
 intensidad = abs(U)**2
 max_intensidad = np.max(intensidad)
-intensidad_norm= intensidad/max_intensidad
 
 if max_intensidad > 0:
     intensidad_log = np.log1p(intensidad / max_intensidad * 100)
@@ -82,12 +85,14 @@ if max_intensidad > 0:
 else:
     intensidad_norm = intensidad
 
+intensidad_norm= intensidad/max_intensidad
+
 #### Grafiquemos
 
 # Aplicamos escala logarítmica (para visualizar detalles en zonas de baja intensidad)
 intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la intensidad para evitar log(0), que es -infinito
 
-fig, ax = plt.subplots(1,2,figsize=(12,6))
+fig, ax = plt.subplots(1,2,figsize=(10,6))
 
 extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
 im0 = ax[0].imshow(np.abs(abertura), cmap='gray', extent=extent)
