@@ -9,7 +9,7 @@ fraccion_abierto = 0.5       # duty cycle
 
 #Escala física de la rejilla
 periodo_m = (1/lineas_mm) * 1e-3     # Periodo en metros (0.1 mm = 100 um)
-longitud_rejilla_m = 4e-3          # Lado físico de la rejilla en metros (1.5 mm)
+longitud_rejilla_m = 4.6e-3          # Lado físico de la rejilla en metros (1.5 mm)
 dx_0 = longitud_rejilla_m / M        # Tamaño de píxel de la rejilla en metros
 periodo_pix = periodo_m / dx_0
 
@@ -31,7 +31,7 @@ N = M                   # La resolución debe ser la misma para una propagación
 ##Variables modificables
 # Calculamos la distancia de Talbot correcta
 z_talbot = (2 * periodo_m**2) / long_de_onda
-z = 1*  z_talbot # Usamos la distancia de Talbot para ver la auto-imagen
+z = 2 * z_talbot # Usamos la distancia de Talbot para ver la auto-imagen
 
 print(z)
 
