@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 #Primero leemos la imagen en la ruta y la convierte en una matriz MxM
-ruta=r"C:\Users\david\OneDrive\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\practica_1\punto4\Resultados\fibra0_0.jpg"
+ruta=r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\practica_1\punto4\Resultados\fibra0_0.jpg"
 
 img = Image.open(ruta).convert("L") #la convertimos a blanco y negro, Objeto Image (4000x3000)
 
@@ -57,7 +57,7 @@ L = dx*N # dimensiones del sensor
 df = 1/L # correspondiente en el espectro
 
 #Valores para ajustar
-z_fibra_a_detector = 0.031  # distancia de la fibra al detector (3 cm)
+z_fibra_a_detector = 0.01  # distancia de la fibra al detector (3 cm)
 z_fuente_a_detector = z_fibra_a_detector + 0.028  #7 cm
 
 # Condiciones de buen muestreo
