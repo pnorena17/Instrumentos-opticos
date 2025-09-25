@@ -57,8 +57,8 @@ L = dx*N # dimensiones del sensor
 df = 1/L # correspondiente en el espectro
 
 #Valores para ajustar
-z_fibra_a_detector = 0.03  # distancia de la fibra al detector (3 cm)
-z_fuente_a_detector = 0.090  #7 cm
+z_fibra_a_detector = 0.031  # distancia de la fibra al detector (3 cm)
+z_fuente_a_detector = z_fibra_a_detector + 0.028  #7 cm
 
 # Condiciones de buen muestreo
 
@@ -119,14 +119,14 @@ fase_esferica_correccion = np.exp(-1j * k * (X**2 + Y**2) / (2 * (z_fuente_a_det
 fig, ax = plt.subplots(1,2,figsize=(10,6))
 
 extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
-im0 = ax[0].imshow(np.abs(U*fase_esferica_correccion)**2, cmap='gray', extent=extent)
+im0 = ax[0].imshow(np.abs(U)**2, cmap='gray', extent=extent)
 ax[0].set_title("Plano de la Apertura", fontsize=14)
 ax[0].set_xlabel("x (mm)", fontsize=12)
 ax[0].set_ylabel("y (mm)", fontsize=12)
 ax[0].set_aspect('equal')
 
 extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
-im1 = ax[1].imshow(imagen, extent=extent, cmap="gray")
+im1 = ax[1].imshow(np.abs(matriz_con_relleno)**2, extent=extent, cmap="gray")
 ax[1].set_title("Patrón de Difracción")
 ax[1].set_xlabel("x en plano de observación (mm)")
 ax[1].set_ylabel("y en plano de observación (mm)")
