@@ -3,27 +3,10 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 #Primero leemos la imagen en la ruta y la convierte en una matriz MxM
-ruta=r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\practica_1\punto4\Resultados\fibra0_0.jpg"
+ruta=r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\punto4\Resultados\fibra0_0.jpg"
 
 img = Image.open(ruta).convert("L") #la convertimos a blanco y negro, Objeto Image (4000x3000)
-
-ancho_original, alto_original = img.size # (4000, 3000)
-
-# 1. Definir la nueva dimensión deseada (ej. el lado más largo debe ser 1080)
-M = 1080 
-
-# 2. Calcular el factor de escala
-# Usamos el lado más grande (4000) para calcular el factor de escala
-factor_escala = M / max(ancho_original, alto_original) 
-
-# 3. Calcular las nuevas dimensiones manteniendo la proporción
-nuevo_ancho = int(ancho_original * factor_escala) 
-nuevo_alto = int(alto_original * factor_escala)
-
-# Las nuevas dimensiones serán (1080, 810)
-# 4. Aplicar el resize
-arr = img.resize((nuevo_ancho, nuevo_alto))
-arr = np.array(arr)/255.0 #la normalizamos [0,1]
+arr = np.array(img)/255.0 #la normalizamos [0,1]
 
 M_size = np.shape((arr))
 
@@ -36,13 +19,12 @@ else:
     M = M_size[0]
     imagen = arr
 
-
 campo_detector = np.sqrt(imagen).astype(complex)
 
 #Tamaño del pixel del detector
 dx = 1.85e-6 # tamaño de pixel (1.85 um)
 
-N = 2048
+N = M
 
 #Hacemos la operación para rellenar de 0 la matriz NxN por fuera de la MxM
 matriz_con_relleno = np.zeros((N, N), dtype=complex)
@@ -57,7 +39,7 @@ L = dx*N # dimensiones del sensor
 df = 1/L # correspondiente en el espectro
 
 #Valores para ajustar
-z_fibra_a_detector = 0.01  # distancia de la fibra al detector (3 cm)
+z_fibra_a_detector = 0.0315  # distancia de la fibra al detector (3 cm)
 z_fuente_a_detector = z_fibra_a_detector + 0.028  #7 cm
 
 # Condiciones de buen muestreo
@@ -89,7 +71,7 @@ Fx,Fy = np.meshgrid(fx, fy)
 fase_esferica_correccion = np.exp(-1j * k * (X**2 + Y**2) / (2 * z_fuente_a_detector))
 
 # Corregimos el campo multiplicándolo por la fase de corrección
-campo_corregido = matriz_con_relleno * fase_esferica_correccion
+campo_corregido = matriz_con_relleno #* fase_esferica_correccion
 
 #### Hallemos A_0 (Espectro Angular)
 
@@ -112,7 +94,6 @@ A_ishift = np.fft.ifftshift(A)
 
 U = (np.fft.ifft2(A_ishift))
 
-fase_esferica_correccion = np.exp(-1j * k * (X**2 + Y**2) / (2 * (z_fuente_a_detector-z_fibra_a_detector)))
 
 #### Grafiquemos
 
