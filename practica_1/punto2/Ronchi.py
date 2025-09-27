@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import tifffile
 
 ##Primero generamos la rendija Ronchi
 #Parámetros
@@ -31,7 +32,7 @@ N = M                   # La resolución debe ser la misma para una propagación
 ##Variables modificables
 # Calculamos la distancia de Talbot correcta
 z_talbot = (2 * periodo_m**2) / long_de_onda
-z = 2 * z_talbot # Usamos la distancia de Talbot para ver la auto-imagen
+z = 1 * z_talbot # Usamos la distancia de Talbot para ver la auto-imagen
 
 print(z)
 
@@ -91,7 +92,11 @@ else:
 #Aplicamos escala logarítmica (para visualizar detalles en zonas de baja intensidad)
 intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la intensidad para evitar log(0), que es -infinito
 
-#intensidad_norm = intensidad/max_intensidad
+intensidad_norm = intensidad/max_intensidad
+
+#Descargamos la imágen en la ruta 
+grafico = intensidad_norm *256
+#tifffile.imwrite(r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos ópticos\practica1\imagenes practica1\simulacion\ronchi1Talbot.tif", grafico.astype(np.uint8))
 
 #Graficamos
 fig, ax = plt.subplots(1,2,figsize=(10,5))
