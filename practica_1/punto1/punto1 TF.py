@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 #Definimos las variables con las que vamos a trabajar
 ##Variables ya establecidas Detector DFM 37UX290-ML 1920×1080 (2.9 um)
 long_de_onda = 633e-9 #(en metros) Usamos la longitud de onda del  rojo: 650 nm
-N = 1080    #Resolución mínima del detector en pixeles 
+N = 2048     #Resolución mínima del detector en pixeles 
 dx = 2.9e-6 #(en metros) Pixel size del detector
 
 ##Variables modificables
@@ -13,7 +13,7 @@ z = 0.1     #(en metros) Distancia entre pantalla y abertura
 ##Variables de la abertura
 #Por ejemplo, usaremos de abertura un cuadrado de lado l
 l = 2e-3    #(en metros) Usamos dimesión máxima (1 mm)
-M = 200   #Muestreo de nuestra abertura
+M = 256  #Muestreo de nuestra abertura
 dx_0 = l/M
 L = N*dx_0
 
