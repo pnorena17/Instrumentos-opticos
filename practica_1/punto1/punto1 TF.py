@@ -2,19 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #Definimos las variables con las que vamos a trabajar
-##Variables ya establecidas 
+##Variables ya establecidas Detector DFM 37UX290-ML 1920×1080 (2.9 um)
 long_de_onda = 633e-9 #(en metros) Usamos la longitud de onda del  rojo: 650 nm
-N = 1080    #Resolución mínima de pixeles del detector DFM 37UX290-ML
-dx = 2.9e-6 #(en metros) Pixel size del detector (2.9 um)
+N = 1080    #Resolución mínima del detector en pixeles 
+dx = 2.9e-6 #(en metros) Pixel size del detector
 
 ##Variables modificables
-z = 0.6     #(en metros) Distancia entre pantalla y abertura
+z = 0.1     #(en metros) Distancia entre pantalla y abertura
 
 ##Variables de la abertura
 #Por ejemplo, usaremos de abertura un cuadrado de lado l
-l = 1e-3    #(en metros) Usamos dimesión máxima (1 mm)
-dx_0 = long_de_onda*z/(N*dx)  #(en metros) Tamaño de pixel en nuestra abertura
-M = 2*int(l/dx_0)   #Muestreo de nuestra abertura
+l = 2e-3    #(en metros) Usamos dimesión máxima (1 mm)
+M = 200   #Muestreo de nuestra abertura
+dx_0 = l/M
 L = N*dx_0
 
 #Verificaciones antes de iniciar el cálculo
@@ -69,6 +69,7 @@ else:
 #Aplicamos escala logarítmica (para visualizar detalles en zonas de baja intensidad)
 intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la intensidad para evitar log(0), que es -infinito
 
+intensidad_norm = intensidad/max_intensidad
 
 #Graficamos
 fig, ax = plt.subplots(1,2,figsize=(10,5))
@@ -92,6 +93,7 @@ plt.colorbar(im, ax=ax[1], label="Intensidad normalizada")
 plt.tight_layout()
 plt.show()
 
+"""
 center_index = N // 2
 perfil_intensidad = intensidad[center_index, :]
 
@@ -113,4 +115,5 @@ plt.xlabel('Posición en x (m)')
 plt.ylabel('log10(Intensidad)')
 plt.grid(True)
 plt.show()
+"""
 
