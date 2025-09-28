@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.special import j0  # Importa la función de Bessel J0
+from scipy.integrate import quad # Importa el integrador numérico
 
 #### Creamos las Variables
 
@@ -12,7 +14,7 @@ dx = 3.7e-6 # tamaño de pixel (3.7 um)
 L = dx*N # dimensiones del sensor
 df = 1/L # correspondiente en el espectro
 
-z = 0.02 # distancia de la abertura al detector (4 cm)
+z = 0.02 # distancia de la abertura al detector (2 cm)
 
 # Condiciones de buen muestreo
 
@@ -42,16 +44,16 @@ Fx,Fy = np.meshgrid(fx, fy)
 
 #### Abertura Circular
 
-r_0 = 1e-3 # 2mm
-#abertura = (X**2 + Y**2) <= r_0**2
-#U_0 = abertura.astype(np.complex128)
+R = 1e-3 
+abertura = (X**2 + Y**2) <= R**2
+U_0 = abertura.astype(np.complex128)
 
 
 #### Abertura Cuadrada
 
-l = 2e-3  # Longitud de la abertura
-abertura = (np.abs(X) <= l / 2) & (np.abs(Y) <= l / 2)
-U_0 = abertura.astype(np.complex128)
+#l = 2e-3  # Longitud de la abertura
+#abertura = (np.abs(X) <= l / 2) & (np.abs(Y) <= l / 2)
+#U_0 = abertura.astype(np.complex128)
 
 #### Hallemos A_0 (Espectro Angular)
 
@@ -88,6 +90,9 @@ else:
 intensidad_norm= intensidad/max_intensidad
 
 #### Grafiquemos
+#Descargamos la imágen en la ruta 
+grafico = intensidad_norm *256
+#tifffile.imwrite(r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos ópticos\practica1\imagenes practica1\simulacion\ronchi1Talbot.tif", grafico.astype(np.uint8))
 
 # Aplicamos escala logarítmica (para visualizar detalles en zonas de baja intensidad)
 intensidad_log = np.log10(intensidad/max_intensidad + 1e-6)   #Se suma 1 a la intensidad para evitar log(0), que es -infinito
@@ -111,4 +116,17 @@ center_index = N // 2
 perfil_intensidad = intensidad[center_index, :]
 
 fig.tight_layout()
+plt.show()
+
+center_index = N // 2
+perfil_intensidad = intensidad[center_index, :]
+
+# Gráfico del perfil de intensidad en escala lineal
+plt.figure(figsize=(10, 5))
+plt.plot(m, perfil_intensidad)
+plt.xlim(-6 * R , 6 * R )
+plt.title('Perfil de Intensidad a lo largo de y=0 (Escala Lineal)')
+plt.xlabel('Posición en x (m)')
+plt.ylabel('Intensidad')
+plt.grid(True)
 plt.show()
