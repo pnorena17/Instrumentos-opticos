@@ -96,7 +96,7 @@ for idx, z in enumerate(zs):
 
     intensidad_norm = intensidad/max_intensidad
 
-    #Descargamos la imágen en la ruta 
+    """    #Descargamos la imágen en la ruta 
     grafico = intensidad_norm *256
     if idx==0:
         tifffile.imwrite(r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos ópticos\practica1\imagenes practica1\simulacion\pez0.tif", grafico.astype(np.uint8))
@@ -108,7 +108,7 @@ for idx, z in enumerate(zs):
         tifffile.imwrite(r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos ópticos\practica1\imagenes practica1\simulacion\pez3.tif", grafico.astype(np.uint8))
     elif idx==4:
         tifffile.imwrite(r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos ópticos\practica1\imagenes practica1\simulacion\pez4.tif", grafico.astype(np.uint8))
-
+    """
 
     #Graficamos
     fig, ax = plt.subplots(1,2,figsize=(10,5))
