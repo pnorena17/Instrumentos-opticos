@@ -28,8 +28,11 @@ n_0 = (np.arange(M) - M/2) * dx_0
 m_0 = (np.arange(M) - M/2) * dx_0
 N_0, M_0 = np.meshgrid(n_0, m_0)
 
+R = 1e-3 
+abertura = (N_0**2 + M_0**2) <= R**2
+
 #Creamos la matriz MxM para la abertura
-campo_entrada = np.ones((M,M), dtype=complex)                  #Esta es U[n_0,m_0,0]
+campo_entrada = abertura.astype(np.complex128)                  #Esta es U[n_0,m_0,0]
 
 #Calculamos la matriz de fase cuadrática
 k = 2*np.pi/long_de_onda
@@ -93,7 +96,7 @@ plt.colorbar(im, ax=ax[1], label="Intensidad normalizada")
 plt.tight_layout()
 plt.show()
 
-"""
+
 center_index = N // 2
 perfil_intensidad = intensidad[center_index, :]
 
@@ -106,6 +109,8 @@ plt.ylabel('Intensidad')
 plt.grid(True)
 plt.show()
 
+
+"""
 # Gráfico del perfil de intensidad en escala logarítmica
 perfil_intensidad_log = np.log10(perfil_intensidad / np.max(perfil_intensidad) + 1e-6)
 plt.figure(figsize=(10, 5))
