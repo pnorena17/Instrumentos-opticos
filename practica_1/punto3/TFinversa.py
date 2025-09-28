@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 # --- LECTURA DE IMAGEN ---
-ruta = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\punto3\Resultados\pez2_mean.tif"
+ruta = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\punto3\Resultados\pez4_mean.tif"
 img = Image.open(ruta).convert("L") 
 arr = np.array(img)/255.0 
 
@@ -43,7 +43,7 @@ N_0, M_0 = np.meshgrid(n_0, m_0)
 k = 2*np.pi/long_de_onda
 
 # --- RANGO DE Z ---
-z1, z2 = 0.267, 0.275  # metros (ejemplo: 5 cm a 15 cm)
+z1, z2 = 0.134, 0.135  # metros (ejemplo: 5 cm a 15 cm)
 zs = np.linspace(z1, z2, 8)
 
 fig, axes = plt.subplots(2, 4, figsize=(15, 6))
