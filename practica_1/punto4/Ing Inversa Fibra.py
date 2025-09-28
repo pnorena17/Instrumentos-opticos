@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 #Primero leemos la imagen en la ruta y la convierte en una matriz MxM
-ruta=r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\punto4\Resultados\fibra0_0.jpg"
+ruta=r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\punto4\Resultados\fibra1_2.jpg"
 
 img = Image.open(ruta).convert("L") #la convertimos a blanco y negro, Objeto Image (4000x3000)
 arr = np.array(img)/255.0 #la normalizamos [0,1]
@@ -74,7 +74,6 @@ fase_esferica_correccion = np.exp(-1j * k * (X**2 + Y**2) / (2 * z_fuente_a_dete
 campo_corregido = matriz_con_relleno #* fase_esferica_correccion
 
 #### Hallemos A_0 (Espectro Angular)
-
 A_0 = np.fft.fft2(campo_corregido)
 A_0sh = np.fft.fftshift(A_0)
 
@@ -87,31 +86,30 @@ argumento_raiz = (2 * np.pi)**2 * ((1. / long_onda)**2 - Fx** 2 - Fy** 2)
 tmp = np.sqrt(np.abs(argumento_raiz))
 kz = np.where(argumento_raiz >= 0, tmp, 1j*tmp)
 
-A = A_0sh * (np.exp(-1j * z_fibra_a_detector * kz))
-A_ishift = np.fft.ifftshift(A)
+# --- RANGO DE Z ---
+z1, z2 = 0.034, 0.04 # metros (ejemplo: 5 cm a 15 cm)
+zs = np.linspace(z1, z2, 8)
 
-#### Hallemos el campo de salida U
+fig, axes = plt.subplots(2, 4, figsize=(15, 6))
+axes = axes.ravel()
 
-U = (np.fft.ifft2(A_ishift))
+for idx, z in enumerate(zs):
+
+    A = A_0sh * (np.exp(-1j * z * kz))
+    A_ishift = np.fft.ifftshift(A)
+
+    #### Hallemos el campo de salida U
+    U = (np.fft.ifft2(A_ishift))
 
 
-#### Grafiquemos
+    #### Grafiquemos
+    intensidad_norm = np.abs(U)**2
+    intensidad_norm /= np.max(intensidad_norm)
 
-fig, ax = plt.subplots(1,2,figsize=(10,6))
-
-extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
-im0 = ax[0].imshow(np.abs(U)**2, cmap='gray', extent=extent)
-ax[0].set_title("Plano de la Apertura", fontsize=14)
-ax[0].set_xlabel("x (mm)", fontsize=12)
-ax[0].set_ylabel("y (mm)", fontsize=12)
-ax[0].set_aspect('equal')
-
-extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
-im1 = ax[1].imshow(np.abs(matriz_con_relleno)**2, extent=extent, cmap="gray")
-ax[1].set_title("Patrón de Difracción")
-ax[1].set_xlabel("x en plano de observación (mm)")
-ax[1].set_ylabel("y en plano de observación (mm)")
-plt.colorbar(im1, ax=ax[1], label="Intensidad normalizada")
+    ax = axes[idx]
+    ax.imshow(intensidad_norm, cmap='gray', extent=[-L/2, L/2, -L/2, L/2])
+    ax.set_title(f"z={z*100:.3f} cm", fontsize=8)
+    ax.axis("off")
 
 fig.tight_layout()
 plt.show()
