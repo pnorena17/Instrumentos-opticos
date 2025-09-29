@@ -1,16 +1,10 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Sep 28 17:07:05 2025
-
-@author: david
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import tifffile
 
 #Primero leemos la imagen en la ruta y la convierte en una matriz MxM
-ruta=r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\punto4\Resultados\fibra0_0.jpg"
+ruta=r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\punto4\Resultados\fibra0_2.jpg"
 
 img = Image.open(ruta).convert("L") #la convertimos a blanco y negro, Objeto Image (4000x3000)
 arr = np.array(img)/255.0 #la normalizamos [0,1]
@@ -46,14 +40,14 @@ L = dx*N # dimensiones del sensor
 df = 1/L # correspondiente en el espectro
 
 #Valores para ajustar
-z_fibra_a_detector = 0.0315  # distancia de la fibra al detector (3 cm)
-z_fuente_a_detector = z_fibra_a_detector + 0.028  #7 cm
+z = 0.11642  # distancia de la fibra al detector (3 cm)
+z_fuente_a_detector = z + 0.028  #7 cm
 
 # Condiciones de buen muestreo
 
 z_max = N*(dx**2)/long_onda
 print(z_max)
-#assert z_fibra_a_detector <= z_max, "No cumple el criterio de z para FTE"
+#assert z <= z_max, "No cumple el criterio de z para FTE"
 
 
 ######### Coordenadas Espaciales
@@ -94,20 +88,28 @@ argumento_raiz = (2 * np.pi)**2 * ((1. / long_onda)**2 - Fx** 2 - Fy** 2)
 tmp = np.sqrt(np.abs(argumento_raiz))
 kz = np.where(argumento_raiz >= 0, tmp, 1j*tmp)
 
-A = A_0sh * (np.exp(-1j * z_fibra_a_detector * kz))
+A = A_0sh * (np.exp(-1j * z * kz))
 A_ishift = np.fft.ifftshift(A)
 
 #### Hallemos el campo de salida U
 
 U = (np.fft.ifft2(A_ishift))
 
+intensidad = np.abs(U)**2
+intensidad_max = np.max(intensidad)
+intensidad_norm = intensidad/intensidad_max
+
 
 #### Grafiquemos
+#Descargamos la imágen en la ruta 
+grafico = intensidad_norm *256
+#tifffile.imwrite(r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos ópticos\practica1\imagenes practica1\simulacion\fibra_recuperada\fibra02.tif", grafico.astype(np.uint8))
+
 
 fig, ax = plt.subplots(1,2,figsize=(10,6))
 
 extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
-im0 = ax[0].imshow(np.abs(U)**2, cmap='gray', extent=extent)
+im0 = ax[0].imshow(intensidad_norm, cmap='gray', extent=extent)
 ax[0].set_title("Plano de la Apertura", fontsize=14)
 ax[0].set_xlabel("x (mm)", fontsize=12)
 ax[0].set_ylabel("y (mm)", fontsize=12)
@@ -115,7 +117,7 @@ ax[0].set_aspect('equal')
 
 extent = [-L/2 * 1e3, L/2 * 1e3, -L/2 * 1e3, L/2 * 1e3]
 im1 = ax[1].imshow(np.abs(matriz_con_relleno)**2, extent=extent, cmap="gray")
-ax[1].set_title("Patrón de Difracción")
+ax[1].set_title(f"Patrón de Difracción (z = {z*100} cm)")
 ax[1].set_xlabel("x en plano de observación (mm)")
 ax[1].set_ylabel("y en plano de observación (mm)")
 plt.colorbar(im1, ax=ax[1], label="Intensidad normalizada")
