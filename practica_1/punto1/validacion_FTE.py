@@ -93,7 +93,7 @@ fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 
 # Dibujamos los perfiles normalizados
 ax.plot(x * 1e3, perfil_analitico_norm, 'r-', linewidth=3, label='Solución Analítica Exacta')
-ax.plot(x * 1e3, perfil_simulado_norm, 'b--', linewidth=2, label='Perfil de Simulación')
+ax.plot(x * 1e3, perfil_simulado_norm, 'b--', linewidth=2, label='Perfil de Simulación AS')
 
 # Personalización del gráfico
 ax.set_title(f"Validación de Perfiles a z = {z*100} cm", fontsize=16)
