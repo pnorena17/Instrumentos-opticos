@@ -133,10 +133,10 @@ fig, ax = plt.subplots(1, 1, figsize=(10, 6))
 # Dibujamos los perfiles normalizados
 # Las coordenadas del perfil simulado son 'x'
 ax.plot(x * 1e3, perfil_analitico_norm, 'r-', linewidth=3, label='Perfil Analítico (Integración)')
-ax.plot(x * 1e3, perfil_simulado_norm, 'b--', linewidth=2, label='Perfil Simulación (Espectro Angular)')
+ax.plot(x * 1e3, perfil_simulado_norm, 'b--', linewidth=2, label='Perfil Simulación TF')
 
 # Personalización del gráfico
-ax.set_title(f"Comparación de Perfiles de Difracción de Fresnel", fontsize=16)
+ax.set_title(f"Comparación de Perfiles de Difracción a z = {z*100} cm", fontsize=16)
 ax.set_xlabel("Posición radial x (mm)", fontsize=12)
 ax.set_ylabel("Intensidad Normalizada", fontsize=12)
 ax.grid(True, linestyle='--', alpha=0.7)
