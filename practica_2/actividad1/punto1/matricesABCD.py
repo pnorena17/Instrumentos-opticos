@@ -31,7 +31,12 @@ def propagar_difracción(campo_entrada, lado_entrada, long_onda, matriz_abcd):
         # Para simular la inversión y el escalado, se requiere interpolación, por ahora, solo evitemos errores
         print(f"Solución provisional: Magnificación: {M:.2f}x, Tamaño de salida: {L_salida*100:.2f} cm")
         # Devolvemos el campo de entrada para que el código no falle.
-        return campo_entrada, L_salida
+        
+        if magnificacion < 0:
+            campo_salida = np.flip(campo_entrada)
+        else: 
+            campo_salida = campo_entrada
+        return campo_salida, L_salida
 
     #Propagación General (B != 0)
     magnificacion = campo_entrada.shape[0]  # Tamaño de la malla (ej: 1024)
@@ -65,7 +70,7 @@ def propagar_difracción(campo_entrada, lado_entrada, long_onda, matriz_abcd):
     return campo_salida, L_salida
 
 #Primero leemos la imagen en la ruta y la convierte en una matriz MxM
-ruta=r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_1\images\Transm_E06.png"
+ruta=r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\practica_1\images\Transm_E06.png"
 
 img = Image.open(ruta).convert("L") #la convertimos a blanco y negro
 arr = np.array(img)/255.0 #la normalizamos [0,1]
@@ -84,10 +89,10 @@ f = 0.500 #500 mm
 d = 2*f   #d>f
 
 #Transferencia S -> O 
-matriz_cam_1 = traslacion(f)*lente_delgada(f)*traslacion(f)*espejo()*traslacion(f)*lente_delgada(f)*traslacion(f)
+matriz_cam_1 = traslacion(f)@lente_delgada(f)@traslacion(f)@espejo()@traslacion(f)@lente_delgada(f)@traslacion(f)
 
 #Transferencia S -> U
-matriz_cam_2 = traslacion(f)*lente_delgada(f)*traslacion(f/2)*espejo()*traslacion(d-(f/2))
+matriz_cam_2 = traslacion(f)@lente_delgada(f)@traslacion(f/2)@espejo()@traslacion(d-(f/2))
 
 #Definción de variables para la integral de difracción
 l_BS = 0.050 #50 mm
@@ -134,9 +139,10 @@ plt.xlabel('x (cm)')
 plt.ylabel('y (cm)')
 
 plt.subplot(1, 2, 2)
-plt.imshow(intensidad_cam2, cmap='gray', extent=[-L_cam2/2*100, L_cam2/2*100, -L_cam2/2*100, L_cam2/2*100])
+plt.imshow(np.log(intensidad_cam2), cmap='gray', extent=[-L_cam2/2*100, L_cam2/2*100, -L_cam2/2*100, L_cam2/2*100])
 plt.title('Intensidad en Cámara 2')
 plt.xlabel('x (cm)')
 
 plt.tight_layout()
 plt.show()
+
