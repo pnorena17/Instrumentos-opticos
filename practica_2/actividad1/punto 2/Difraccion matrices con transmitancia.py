@@ -139,7 +139,7 @@ def camino_1(objeto, L_objeto, M, long_onda, f, L1_M1, L2_M1,
         intensidad_M1_sin_dc, 
         min_distance=10, 
         threshold_rel=0.1, # Ignoramos el pico central ya que corresponde a las frecuencias bajas
-        num_peaks=6  # Maxima cantidad de picos
+        num_peaks=10  # Maxima cantidad de picos
     )
     
     print(f"Se detectaron {len(coordenadas_picos)} picos de ruido.")
@@ -237,14 +237,14 @@ L1_M1 = 0.0104 # 10.4 mm
 L2_M1 = 0.0058 # 5.8 mm
 
 # 1. Radio (metros) del centro a ignorar al buscar picos. (en mm)
-radio_dc_a_bloquear = 0.00003 
+radio_dc_a_bloquear = 0.0003 
 
 # 2. Sigma (metros) de las muescas para controlar el difuminado (en mm)
 sigma_muesca = 0.0002
 
 # Ruta de la imagen
 
-#ruta_imagen = r"C:\Users\david\OneDrive\Desktop\practica2\img2.bmp"
+#ruta_imagen = r"C:\Users\david\OneDrive\Desktop\practica2\img1.bmp"
 ruta_imagen =r"C:\Users\david\OneDrive\Desktop\Noise images\Noise (18).png"
 
 # Cargamos el objeto
