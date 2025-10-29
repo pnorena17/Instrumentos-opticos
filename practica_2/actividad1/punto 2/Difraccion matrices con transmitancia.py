@@ -245,7 +245,7 @@ sigma_muesca = 0.0002
 # Ruta de la imagen
 
 #ruta_imagen = r"C:\Users\david\OneDrive\Desktop\practica2\img1.bmp"
-ruta_imagen =r"C:\Users\david\OneDrive\Desktop\Noise images\Noise (18).png"
+ruta_imagen =r"C:\Users\david\OneDrive\Desktop\Noise images\Noise (1).png"
 
 # Cargamos el objeto
 objeto, M = subir_imagen(ruta_imagen)
