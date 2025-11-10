@@ -98,7 +98,7 @@ def subir_imagen(ruta):
 
 
 
-def pupila(M, L_pupila_calc, R_pupila, R_bloqueo=0, R_anillo_int=0, R_anillo_ext=0):
+def pupila(M, L_pupila_calc, tipo_filtro, R_pupila, R_bloqueo=0):
     
     coords_pupila = np.linspace(-L_pupila_calc/2, L_pupila_calc/2, M)
     X_p, Y_p = np.meshgrid(coords_pupila, coords_pupila)
@@ -107,13 +107,21 @@ def pupila(M, L_pupila_calc, R_pupila, R_bloqueo=0, R_anillo_int=0, R_anillo_ext
     P_apertura = np.zeros((M, M), dtype=complex)
     P_apertura[R_p < R_pupila] = 1.0
     
-    P_pupila = P_apertura
-       
+    # Tipos de filtro (campo claro y oscuro)
+    
+    if tipo_filtro == "campo claro":
+        P_pupila = P_apertura
+        
+    elif tipo_filtro == "campo oscuro":
+        P_bloqueo = np.ones((M,M), dtype=complex)
+        P_bloqueo[R_p < R_bloqueo] = 0.0 # Creamos el circulo negro en el centro
+        P_pupila = P_apertura * P_bloqueo
+      
     return P_pupila
 
 # Funcion para el microscopio
 
-def simular_microscopio_4f(objeto, L_objeto, M, long_onda, f_MO, f_TL, R_pupila):
+def simular_microscopio_4f(objeto, L_objeto, M, long_onda, f_MO, f_TL, tipo_filtro, R_pupila, R_bloqueo=0):
     
     # Propagación S a Pupila (TF 1) 
     print("1. Propagando Objeto -> Plano Pupila (TF)")
@@ -122,7 +130,7 @@ def simular_microscopio_4f(objeto, L_objeto, M, long_onda, f_MO, f_TL, R_pupila)
     
     # Creamos el Filtro de Pupila P(x,y) 
     print("2. Creando pupila P(x,y) de tipo...")
-    P_pupila = pupila(M, L_pupila_calc, R_pupila)
+    P_pupila = pupila(M, L_pupila_calc, tipo_filtro, R_pupila, R_bloqueo)
     
     # Aplicamos Filtro 
     print("3. Aplicando filtro en el plano pupila.")
@@ -171,49 +179,82 @@ print(f"  Límite de Abbe (d = λ/NA): {d_min_abbe * 1e6:.3f} µm (Teórico)")
 print(f"  Equivalente en lp/mm: {lp_mm_abbe:.1f} lp/mm (Teórico)")
 
 
+# Parametros de los filtros
+
+R_bloqueo_co = R_pupila * 0.3
+
+# Campo claro
+campo_cc, L_cc, pupila_cc, L_pupila = simular_microscopio_4f(
+    objeto, L_objeto, M, long_onda, f_MO, f_TL, 
+    'campo claro',
+    R_pupila,)
+
+
+# Campo oscuro
+campo_co, L_co, pupila_co, _ = simular_microscopio_4f(
+    objeto, L_objeto, M, long_onda, f_MO, f_TL,
+    'campo oscuro',
+    R_pupila, 
+    R_bloqueo_co,)
+
+
 # Simulamos
 
-campo_cc, L_cc, pupila_cc, L_pupila = simular_microscopio_4f(
-    objeto, L_objeto, M, long_onda, f_MO, f_TL, R_pupila
-)
-
-
-int_cc = np.abs(campo_cc)**2 #Intensidad
-
+int_cc = np.abs(campo_cc)**2 #Intensidad campo claro
+int_co = np.abs(campo_co)**2 #Intensidad campo oscuro
 
 print("\nMostrando resultados...")
 
-plt.figure(figsize=(12, 6))
-plt.suptitle("Simulación de Test de Resolución (Tarea 2b)", fontsize=16)
+plt.figure(figsize=(18, 6)) # Hacemos la figura más ancha
+plt.suptitle("Comparación: Campo Claro vs. Campo Oscuro", fontsize=16)
 
-# Figura 1: Muestra Original
+# Figura 1: Test de resolucion
 ext_obj = [-L_objeto/2 * 1e6, L_objeto/2 * 1e6, -L_objeto/2 * 1e6, L_objeto/2 * 1e6]
-plt.subplot(1, 2, 1)
+plt.subplot(1, 3, 1)
 plt.imshow(np.abs(objeto), cmap='gray', extent=ext_obj)
-plt.title('Objeto Original S(ξ,η) (Amplitud)')
+plt.title('Objeto Original S(ξ,η)')
 plt.xlabel('ξ (μm)')
 plt.ylabel('η (μm)')
 
-# Figura 2: Imagen Simulada
+# Figura 2: Imagen de Campo Claro
 ext_cam = [-L_cc/2 * 1e6, L_cc/2 * 1e6, -L_cc/2 * 1e6, L_cc/2 * 1e6]
-plt.subplot(1, 2, 2)
+plt.subplot(1, 3, 2)
 plt.imshow(int_cc, cmap='gray', extent=ext_cam)
-plt.title('Imagen Simulada en Cámara')
+plt.title('Imagen Simulada (Campo Claro)')
+plt.xlabel('u (μm)')
+plt.ylabel('v (μm)')
+
+# Figura 3: Imagen de Campo Oscuro
+plt.subplot(1, 3, 3)
+# El campo oscuro suele ser débil, usamos escala logarítmica para verlo mejor
+plt.imshow(np.log1p(int_co), cmap='gray', extent=ext_cam)
+plt.title('Imagen Simulada (Campo Oscuro, log)')
 plt.xlabel('u (μm)')
 plt.ylabel('v (μm)')
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.show()
 
-# Figura de la Pupila
-plt.figure(figsize=(6, 5))
+# Figura de las Pupilas
+plt.figure(figsize=(12, 5))
 ext_pup = [-L_pupila/2 * 1000, L_pupila/2 * 1000, -L_pupila/2 * 1000, L_pupila/2 * 1000]
+zoom_lim = R_pupila * 1.2 * 1000 # 20% más grande que el radio, en mm
+
+plt.subplot(1, 2, 1)
 plt.imshow(np.abs(pupila_cc), cmap='gray', extent=ext_pup)
-plt.title('Pupila P(x,y)')
+plt.title('Pupila P(x,y) - Campo Claro')
 plt.xlabel('x (mm)')
 plt.ylabel('y (mm)')
-# Zoom al radio de la pupila
-plt.xlim(-R_pupila * 1.2 * 1000, R_pupila * 1.2 * 1000)
-plt.ylim(-R_pupila * 1.2 * 1000, R_pupila * 1.2 * 1000)
-plt.colorbar()
+plt.xlim(-zoom_lim, zoom_lim)
+plt.ylim(-zoom_lim, zoom_lim)
+
+plt.subplot(1, 2, 2)
+plt.imshow(np.abs(pupila_co), cmap='gray', extent=ext_pup)
+plt.title('Pupila P(x,y) - Campo Oscuro')
+plt.xlabel('x (mm)')
+plt.ylabel('y (mm)')
+plt.xlim(-zoom_lim, zoom_lim)
+plt.ylim(-zoom_lim, zoom_lim)
+
+plt.tight_layout()
 plt.show()
