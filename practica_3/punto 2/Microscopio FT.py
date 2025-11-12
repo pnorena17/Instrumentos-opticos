@@ -91,10 +91,10 @@ f_TL = 180e-3           # Focal Lente de Tubo (180 mm)
 NA = 0.4                # Apertura Numérica del objetivo (0.4 para 20x)
 
 # Parámetros de la Cámara (Basler)
-dx_real_camara = 2.74e-6 # pixel size de 2.74 µm
+dx_real_camara = 2.74e-6/20 # pixel size de 2.74 µm/20 que es el aumento del MO
 
 # Ruta de la Muestra 
-ruta_imagen = r"C:\Users\user\Desktop\imagern p3\Siemens_star.png" 
+ruta_imagen = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_3\imagenes\Siemens_star.png" 
 
 # Cargamos la imagen del test
 objeto, M = subir_imagen(ruta_imagen)

@@ -156,7 +156,7 @@ NA = 0.4                # Apertura Numérica del objetivo (0.4 para 20x)
 dx_real_camara = 2.74e-6 # pixel size de 3.75 µm
 
 # Ruta de la Muestra 
-ruta_imagen = r"C:\Users\user\Desktop\imagern p3\Siemens_star.png" 
+ruta_imagen = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_3\imagenes\Siemens_star.png" 
 
 
 # Cargamos la imagen del test
