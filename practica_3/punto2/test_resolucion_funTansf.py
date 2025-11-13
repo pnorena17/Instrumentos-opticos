@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-
+import scipy.ndimage as ndi
 
 # Definicion de funciones a usar
 
@@ -67,6 +67,100 @@ def simular_convolucion(objeto, L_objeto, M, long_onda, f_MO, f_TL, R_pupila):
     return campo_cam_convolucion, L_cam, P_pupila_TF, L_pupila_calc
 
 
+def calcular_r_blur(intensidad_img, L_magnificada, plot_diagnostico=True):
+    """
+    Calcula r_blur usando un filtro Laplaciano (detector de bordes).
+    
+    Estima el radio del círculo borroso (r_blur) en una imagen de
+    estrella Siemens mediante la detección de bordes.
+    
+    Args:
+        intensidad_img (np.ndarray): Matriz 2D de la imagen final (magnificada).
+        L_magnificada (float): Tamaño físico total de la imagen (en metros).
+        plot_diagnostico (bool): Si es True, muestra gráficas de depuración.
+        
+    Returns:
+        float: El radio r_blur medido en la imagen magnificada (en metros).
+    """
+    num_pixels = intensidad_img.shape[0]
+    
+    # 1. Aplicar filtro Laplaciano para detectar bordes.
+    #    Las áreas planas (sin resolver) tienden a 0.
+    bordes_laplace = ndi.laplace(intensidad_img)
+    intensidad_bordes = np.abs(bordes_laplace)
+    
+    # 2. Tomar un perfil 1D (corte horizontal por el centro)
+    centro_y = num_pixels // 2
+    perfil_bordes = intensidad_bordes[centro_y, :]
+    
+    # 3. Analizar solo la mitad derecha del perfil (radio >= 0)
+    centro_x = num_pixels // 2
+    perfil_derecha = perfil_bordes[centro_x:]
+    
+    # 4. Normalizar el perfil de bordes
+    perfil_norm = perfil_derecha / np.max(perfil_derecha)
+    
+    # 5. Suavizar el perfil 1D para eliminar ruido de alta frecuencia.
+    #    'sigma=5' es la desviación estándar del filtro Gaussiano.
+    perfil_suavizado = ndi.gaussian_filter1d(perfil_norm, sigma=5)
+
+    # 6. Definir el umbral para considerar un "borde"
+    umbral_borde = 0.10  # 10% del borde máximo
+    
+    try:
+        # 7. Encontrar el primer píxel (índice) donde el perfil 
+        #    suavizado supera el umbral.
+        indices_borde = np.where(perfil_suavizado > umbral_borde)[0]
+        
+        # 7b. Omitir artefactos de ruido cercanos al centro (índice 0)
+        offset_central = 10 # Píxeles a ignorar desde el centro
+        indices_validos = indices_borde[indices_borde > offset_central] 
+        
+        r_blur_pixels = indices_validos[0]
+        
+    except IndexError:
+        print("Error de filtro de borde: No se encontró ningún borde válido.")
+        r_blur_pixels = 0
+        
+    # 8. Convertir la medición de píxeles a metros
+    pixel_size_magnificado = L_magnificada / num_pixels
+    r_blur_mag_m = r_blur_pixels * pixel_size_magnificado
+    
+    # --- Sección de Gráficas de Diagnóstico ---
+    if plot_diagnostico:
+        plt.figure(figsize=(12, 6))
+        
+        # Gráfico 1: Imagen 2D de los bordes detectados
+        plt.subplot(1, 2, 1)
+        plt.imshow(intensidad_bordes, cmap='hot')
+        plt.title('Imagen Filtrada (Laplaciano)')
+        plt.xlabel('Píxeles')
+        plt.ylabel('Píxeles')
+        
+        # Ejemplo: Descomentar para aplicar un zoom manual al centro
+        # plt.xlim(centro_x - 500, centro_x + 500)
+        # plt.ylim(centro_y - 500, centro_y + 500)
+
+        # Gráfico 2: Perfil 1D (Original vs. Suavizado)
+        plt.subplot(1, 2, 2)
+        radios_pix = np.arange(len(perfil_norm))
+        radios_um = radios_pix * pixel_size_magnificado * 1e6
+        
+        plt.plot(radios_um, perfil_norm, label='Perfil Original (Ruidoso)', alpha=0.3)
+        plt.plot(radios_um, perfil_suavizado, label='Perfil Suavizado', color='blue', linewidth=2)
+        plt.axhline(y=umbral_borde, color='r', linestyle='--', label=f'Umbral ({umbral_borde*100:.0f}%)')
+        plt.axvline(x=r_blur_mag_m * 1e6, color='g', linestyle='-', label=f'r_blur = {r_blur_mag_m * 1e6:.2f} µm')
+        
+        plt.title('Perfil de Bordes (Desde el centro)')
+        plt.xlabel('Radio (µm - magnificado)')
+        plt.ylabel('Intensidad de Borde (Normalizada)')
+        plt.legend()
+        plt.xlim(0, radios_um[-1] / 2) # Limitar eje X para mejor visualización
+        plt.grid(True)
+        plt.show()
+    
+    return r_blur_mag_m
+
 
 # Definimos los Parámetros
 long_onda = 533e-9      # Longitud de onda (533 nm)
@@ -98,6 +192,36 @@ campo, L_magnificada, pupila_usada, L_pupila = simular_convolucion(objeto, L_obj
 intensidad = np.abs(campo)**2 #Intensidad campo claro
 intensidad = intensidad/np.max(intensidad)
 
+# Calcular r_blur automáticamente
+# (El resultado está en metros, en la imagen magnificada)
+r_blur_mag_m = calcular_r_blur(intensidad, L_magnificada)
+r_blur_mag_um = r_blur_mag_m * 1e6 # Convertir a micras para leerlo
+
+print(f"Radio borroso medido en la imagen magnificado r_blur_mag = {r_blur_mag_um:.2f} µm")
+
+# Convertir r_blur a unidades sin magnificación
+r_blur_real_m = r_blur_mag_m / Mag_total
+r_blur_real_um = r_blur_real_m * 1e6
+
+print(f"Radio borroso en el objeto real r_blur = {r_blur_real_um:.2f} µm")
+
+# Calcular la resolución mínima
+# (Usando la fórmula de la estrella de Siemens)
+d_min_medido = (2 * np.pi * r_blur_real_m) / N_lines
+
+print(f"Resolución mínima d_min_exp = {d_min_medido * 1e9:.0f} nm")
+
+# Calcular la resolución TEÓRICA (Abbe)
+d_min_teorico = long_onda / NA
+
+print(f"Resolución mínima de Abbe d_min_teo = {d_min_teorico * 1e9:.0f} nm")
+
+# Porcentaje de error
+error = abs(d_min_medido-d_min_teorico)*100/d_min_teorico
+
+print(f"El error de resolución obtenido es de: {error:.2f} %")
+
+##Graficamos
 plt.figure(figsize=(12, 6)) # Hacemos la figura más ancha
 plt.suptitle("Test de resolución", fontsize=16)
 
@@ -122,13 +246,11 @@ plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.show()
 
 # Figura de las Pupilas
-plt.figure(figsize=(12, 5))
+plt.figure(figsize=(6, 5))
 ext_pup = [-L_pupila/2 * 1000, L_pupila/2 * 1000, -L_pupila/2 * 1000, L_pupila/2 * 1000]
 zoom_lim = R_pupila * 1.2 * 1000 
-
-plt.subplot(1, 2, 1)
 plt.imshow(np.abs(pupila_usada), cmap='gray', extent=ext_pup)
-plt.title('TF P(x,y) - Campo Claro')
+plt.title('Función pupila P(x,y)')
 plt.xlabel('x (mm)')
 plt.ylabel('y (mm)')
 plt.xlim(-zoom_lim, zoom_lim)
