@@ -5,78 +5,62 @@ import matplotlib.pyplot as plt
 
 # Definicion de funciones a usar
 
-def subir_imagen(ruta):
-    """Carga una imagen desde 'ruta', la normaliza, la hace cuadrada y la devuelve como 'complex'."""
-    try:
-        img = Image.open(ruta).convert("L") #la convertimos a blanco y negro
-        arr = np.array(img)/255.0 #la normalizamos [0,1]
-    except FileNotFoundError:
-        print(f"ERROR: No se encontró la imagen en {ruta}. Usando un objeto de prueba.")
-        M_temp = 1024
-        coords_temp = np.linspace(-0.5, 0.5, M_temp)
-        XX, YY = np.meshgrid(coords_temp, coords_temp)
-        arr = (XX**2 + YY**2) < 0.1
-        arr = arr.astype(float)
+def generar_estrella_siemens(physical_size, num_pixels, N_spokes):
+   
+    # Crear la rejilla de coordenadas 
+    # Creamos vectores de coordenadas en METROS, centrados en 0.
+    lin = np.linspace(-physical_size / 2, physical_size / 2, num_pixels)
+    x, y = np.meshgrid(lin, lin)
 
-    M_size = np.shape(arr)
-    if M_size[0] != M_size[1]:
-        M = max(M_size[0],M_size[1])
-        objeto = np.zeros((M,M), dtype=complex) # Usar 'complex'
-        start_row, start_col = int((M-M_size[0])/2), int((M-M_size[1])/2)
-        objeto[start_row : start_row + M_size[0], start_col : start_col + M_size[1]] = arr
-    else:
-        M = M_size[0]
-        objeto = arr.astype(complex) # Usar 'complex'
-    
-    print(f"Tamaño de la malla (M): {M}x{M}")
-    return objeto, M
+    # Convertir a Coordenadas Polares (Ángulo)
+    # np.arctan2(y, x) nos da el ángulo de cada píxel (de -pi a +pi)
+    # Este cálculo es independiente de las unidades (metros o µm).
+    angle = np.arctan2(y, x)
 
+    # Generar el Patrón de la Estrella
+    pattern = np.sin(N_spokes * angle) > 0
 
-def pupila(M, L_pupila_calc, tipo_filtro, R_pupila, R_bloqueo=0):
+    # Convertir de Booleano (True/False) a float (1.0/0.0)
+    S_objeto = pattern.astype(float)
+        
+    return S_objeto
 
+def crear_pupila_circular(M, L_pupila_calc, R_pupila):
+    # Crear la rejilla de coordenadas de la pupila
     coords_pupila = np.linspace(-L_pupila_calc/2, L_pupila_calc/2, M)
     X_p, Y_p = np.meshgrid(coords_pupila, coords_pupila)
+    
+    # Calcular la distancia radial de cada píxel al centro
     R_p = np.sqrt(X_p**2 + Y_p**2)
     
-    P_apertura = np.zeros((M, M), dtype=complex)
-    P_apertura[R_p < R_pupila] = 1.0
-    
-    # Tipos de filtro (campo claro y oscuro)
-    if tipo_filtro == "campo claro":
-        P_pupila = P_apertura
-        
-    elif tipo_filtro == "campo oscuro":
-        P_bloqueo = np.ones((M,M), dtype=complex)
-        P_bloqueo[R_p < R_bloqueo] = 0.0 # Creamos el circulo negro
-        
-        P_pupila = P_apertura * P_bloqueo
+    # Crear la apertura: 1.0 adentro del radio, 0.0 afuera
+    P_pupila = np.zeros((M, M), dtype=complex)
+    P_pupila[R_p < R_pupila] = 1.0 + 0.0j # 1.0 para transmisión total
     
     return P_pupila
 
 
-def simular_con_convolucion(objeto, L_objeto, M, long_onda, f_MO, f_TL, 
-                             tipo_filtro, R_pupila, R_bloqueo=0):
+def simular_convolucion(objeto, L_objeto, M, long_onda, f_MO, f_TL, R_pupila):
 
-    # Necesitamos el tamaño del plano pupila (L_pupila_calc) para
-    # crear la pupila P(x,y) a la escala correcta
+    # Calcular la escala del plano de la pupila (igual que antes)
+    # Esto es crucial para que R_pupila (en mm) coincida con los píxeles
     dx_objeto = L_objeto / M
     L_pupila_calc = (long_onda * f_MO) / dx_objeto
 
-    # Creamos la FT (que es la Pupila P(x,y)) 
-    P_pupila_TF = pupila(M, L_pupila_calc, tipo_filtro, R_pupila, R_bloqueo)
+    # Crear la pupila (¡usando la nueva función simple!)
+    P_pupila_TF = crear_pupila_circular(M, L_pupila_calc, R_pupila)
     
-    # Calculamos la Convolucion
-
-    # (ifftshift centra el objeto antes de la FFT)
+    # Simular la propagación y el filtrado (igual que antes)
+    # Objeto -> FFT -> Pupila
     S_fft = np.fft.fft2(np.fft.ifftshift(objeto))
     
-    # (fftshift centra la OTF/Pupila para que coincida con S_fft)
+    # Pupila -> Multiplicación -> Cámara
     E_cam_fft = S_fft * np.fft.fftshift(P_pupila_TF)
     
-    # (fftshift deshace el ifftshift inicial)
+    # Cámara -> IFFT -> Imagen final
     campo_cam_convolucion = np.fft.fftshift(np.fft.ifft2(E_cam_fft))
 
-    # La magnificación del sistema
+    # Calcular magnificación y escala de la imagen final (igual que antes)
     Mag_total = f_TL / f_MO
     L_cam = L_objeto * Mag_total
     
@@ -85,81 +69,54 @@ def simular_con_convolucion(objeto, L_objeto, M, long_onda, f_MO, f_TL,
 
 
 # Definimos los Parámetros
-long_onda = 550e-9      # Longitud de onda (550 nm)
-f_MO = 9e-3             # Focal Objetivo (9 mm para un 20x)
-f_TL = 180e-3           # Focal Lente de Tubo (180 mm)
-NA = 0.4                # Apertura Numérica del objetivo (0.4 para 20x)
-
-# Parámetros de la Cámara (Basler)
-dx_real_camara = 2.74e-6/20 # pixel size de 2.74 µm/20 que es el aumento del MO
-
-# Ruta de la Muestra 
-ruta_imagen = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\practica_3\imagenes\Siemens_star.png" 
-
-# Cargamos la imagen del test
-objeto, M = subir_imagen(ruta_imagen)
-
-# Tamaño del objeto
-L_objeto = (dx_real_camara * M * f_MO) / f_TL
+long_onda = 533e-9      # Longitud de onda (533 nm)
+f_MO = 10e-3             # Focal Objetivo (9 mm para un 20x)
+f_TL = 200e-3           # Focal Lente de Tubo (200 mm)
+NA = 0.5                # Apertura Numérica del objetivo (0.5 para 20x)
 
 # Magnificación total del sistema
 Mag_total = f_TL / f_MO
 
+# Parámetros de la Cámara (Basler)
+dx_real_camara = 2.74e-6 # pixel size de 2.74 µm que es el aumento del MO
+num_pixels = 2848        # Resolución de la cámara
+L_sensor = num_pixels*dx_real_camara
+
+# Generamos la imagen del test
+L_objeto = L_sensor / Mag_total  # Dimensión total que representará tu imagen en um
+N_lines = 128                     # Número de PARES de líneas (blanco/negro).
+objeto = generar_estrella_siemens(L_objeto, num_pixels, N_lines)
+
 # Radio físico de la pupila
 R_pupila = NA * f_MO
-print(f"      Radio de la Pupila P(x,y): {R_pupila * 1000:.2f} mm (calculado con NA)")
+print(f"Radio de la Pupila P(x,y): {R_pupila * 1000:.2f} mm")
 
 
-# Parametros de los filtros
-R_bloqueo_co = R_pupila * 0.3
-
-
-# Campo claro
-campo_cc, L_cc, pupila_cc, L_pupila = simular_con_convolucion(
-    objeto, L_objeto, M, long_onda, f_MO, f_TL,
-    tipo_filtro='campo claro', 
-    R_pupila=R_pupila
-)
-
-# Campo oscuro
-campo_co, L_co, pupila_co, _ = simular_con_convolucion(
-    objeto, L_objeto, M, long_onda, f_MO, f_TL, 
-    tipo_filtro='campo oscuro', 
-    R_pupila=R_pupila,
-    R_bloqueo=R_bloqueo_co
-)
+campo, L_magnificada, pupila_usada, L_pupila = simular_convolucion(objeto, L_objeto, num_pixels, long_onda, f_MO, f_TL, R_pupila)
 
 # Simulamos
-int_cc = np.abs(campo_cc)**2 #Intensidad campo claro
-int_co = np.abs(campo_co)**2 #Intensidad campo oscuro
+intensidad = np.abs(campo)**2 #Intensidad campo claro
+intensidad = intensidad/np.max(intensidad)
 
-print("\nMostrando resultados...")
-
-plt.figure(figsize=(18, 6)) # Hacemos la figura más ancha
-plt.suptitle("Comparación: Campo Claro vs. Campo Oscuro (Método Convolución)", fontsize=16)
+plt.figure(figsize=(12, 6)) # Hacemos la figura más ancha
+plt.suptitle("Test de resolución", fontsize=16)
 
 # Figura 1: Test de resolucion
 ext_obj = [-L_objeto/2 * 1e6, L_objeto/2 * 1e6, -L_objeto/2 * 1e6, L_objeto/2 * 1e6]
-plt.subplot(1, 3, 1)
+plt.subplot(1, 2, 1)
 plt.imshow(np.abs(objeto), cmap='gray', extent=ext_obj)
 plt.title('Objeto Original S(ξ,η)')
 plt.xlabel('ξ (μm)')
 plt.ylabel('η (μm)')
 
-# Figura 2: Imagen de Campo Claro
-ext_cam = [-L_cc/2 * 1e6, L_cc/2 * 1e6, -L_cc/2 * 1e6, L_cc/2 * 1e6]
-plt.subplot(1, 3, 2)
-plt.imshow(int_cc, cmap='gray', extent=ext_cam)
-plt.title('Imagen Simulada (Campo Claro)')
+# Figura 2: Imagen de vista desde el microscopio
+ext_cam = [-L_magnificada/2 * 1e6, L_magnificada/2 * 1e6, -L_magnificada/2 * 1e6, L_magnificada/2 * 1e6]
+plt.subplot(1, 2, 2)
+plt.imshow(intensidad, cmap='gray', extent=ext_cam)
+plt.title('Imagen en el MO')
 plt.xlabel('u (μm)')
 plt.ylabel('v (μm)')
 
-# Figura 3: Imagen de Campo Oscuro
-plt.subplot(1, 3, 3)
-plt.imshow(np.log1p(int_co), cmap='gray', extent=ext_cam)
-plt.title('Imagen Simulada (Campo Oscuro, log)')
-plt.xlabel('u (μm)')
-plt.ylabel('v (μm)')
 
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.show()
@@ -170,18 +127,8 @@ ext_pup = [-L_pupila/2 * 1000, L_pupila/2 * 1000, -L_pupila/2 * 1000, L_pupila/2
 zoom_lim = R_pupila * 1.2 * 1000 
 
 plt.subplot(1, 2, 1)
-# --- LÍNEA CORREGIDA (sin np.fft.fftshift) ---
-plt.imshow(np.abs(pupila_cc), cmap='gray', extent=ext_pup)
+plt.imshow(np.abs(pupila_usada), cmap='gray', extent=ext_pup)
 plt.title('TF P(x,y) - Campo Claro')
-plt.xlabel('x (mm)')
-plt.ylabel('y (mm)')
-plt.xlim(-zoom_lim, zoom_lim)
-plt.ylim(-zoom_lim, zoom_lim)
-
-plt.subplot(1, 2, 2)
-# --- LÍNEA CORREGIDA (sin np.fft.fftshift) ---
-plt.imshow(np.abs(pupila_co), cmap='gray', extent=ext_pup)
-plt.title('TF P(x,y) - Campo Oscuro')
 plt.xlabel('x (mm)')
 plt.ylabel('y (mm)')
 plt.xlim(-zoom_lim, zoom_lim)
