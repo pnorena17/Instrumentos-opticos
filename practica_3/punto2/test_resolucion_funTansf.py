@@ -128,21 +128,13 @@ def calcular_r_blur(intensidad_img, L_magnificada, plot_diagnostico=True):
     
     # --- Sección de Gráficas de Diagnóstico ---
     if plot_diagnostico:
-        plt.figure(figsize=(12, 6))
-        
-        # Gráfico 1: Imagen 2D de los bordes detectados
-        plt.subplot(1, 2, 1)
-        plt.imshow(intensidad_bordes, cmap='hot')
-        plt.title('Imagen Filtrada (Laplaciano)')
-        plt.xlabel('Píxeles')
-        plt.ylabel('Píxeles')
+        plt.figure(figsize=(6, 6))
         
         # Ejemplo: Descomentar para aplicar un zoom manual al centro
         # plt.xlim(centro_x - 500, centro_x + 500)
         # plt.ylim(centro_y - 500, centro_y + 500)
 
         # Gráfico 2: Perfil 1D (Original vs. Suavizado)
-        plt.subplot(1, 2, 2)
         radios_pix = np.arange(len(perfil_norm))
         radios_um = radios_pix * pixel_size_magnificado * 1e6
         
