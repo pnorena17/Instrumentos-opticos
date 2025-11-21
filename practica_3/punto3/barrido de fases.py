@@ -1,12 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import io 
+from scipy import ndimage # <-- ¡NUEVA IMPORTACIÓN!
 
 
 # Definicion de funciones a usar
 
 def cargar_muestra_compleja(ruta_archivo):
-    
+    # Esta función está perfecta, no se toca
     with open(ruta_archivo, 'r') as f:
         contenido_texto = f.read()
         
@@ -93,7 +94,7 @@ def simular_con_convolucion(objeto, L_objeto, M, long_onda, f_MO, f_TL,
 
 # Definimos los Parámetros
 long_onda = 533e-9
-f_MO = 10e-3
+f_MO = 9e-3
 f_TL = 200e-3
 NA = 0.5
 dx_real_camara = 2.74e-6
@@ -110,57 +111,76 @@ Mag_total = f_TL / f_MO
 # Radio físico de la pupila
 R_pupila = NA * f_MO
 
-# Parámetros para los filtros
-R_punto_fase_cf = R_pupila * 0.05       # Radio del stop (5% de la pupila)
-R_bloqueo_co_var = R_punto_fase_cf      # El radio es el mismo
-
-atenuacion_co = 0.8      # Atenuación (transparencia) del stop (ej. 30%)
-fase_stop_co = np.pi/2 # Desfase (grosor) del stop (90 grados)
+# Parámetros para el barrido 
+atenuacion_co = 0.7       # Atenuación (transparencia) del stop 
+# (Usamos un radio del 5%)
+R_bloqueo_co_var = R_pupila * 0.05 
 
 
-# Simulamos
 
-# Campo Claro
-campo_cc, L_cc, pupila_cc, L_pupila = simular_con_convolucion(
-    objeto, L_objeto, M, long_onda, f_MO, f_TL, 
-    tipo_filtro='campo_claro', 
-    R_pupila=R_pupila
-)
+# Definimos los desfases que queremos probar (en radianes)
 
-# "Campo Oscuro Variable"
-campo_co_var, L_co, pupila_co_var, _ = simular_con_convolucion(
-    objeto, L_objeto, M, long_onda, f_MO, f_TL, 
-    tipo_filtro='campo_oscuro_variable', 
-    R_pupila=R_pupila,
-    R_bloqueo=R_bloqueo_co_var, 
-    atenuacion=atenuacion_co,
-    fase_stop=fase_stop_co
-)
+barrido_fases = np.linspace(np.pi/3, 2*np.pi/3, 3)
 
-# Contraste de Fase (Zernike)
+# Listas para guardar los resultados
+resultados_intensidad = []
+resultados_pupilas = []
+resultados_contraste = [] # Lista para métrica de contraste
+
+
+print("\n--- INICIANDO BARRIDO DE DESFASES ---")
+
+for fase_actual in barrido_fases:
+    print(f"Simulando para fase_stop = {fase_actual/np.pi:.2f} * pi ({np.degrees(fase_actual):.0f} deg)")
+    
+    # Ejecutamos la simulación con el desfase actual
+    campo_co_var, L_co, pupila_co_var, L_pupila = simular_con_convolucion(
+        objeto, L_objeto, M, long_onda, f_MO, f_TL, 
+        tipo_filtro='campo_oscuro_variable', 
+        R_pupila=R_pupila,
+        R_bloqueo=R_bloqueo_co_var, # Radio
+        atenuacion=atenuacion_co,   # Atenuación 
+        fase_stop=fase_actual       # Variable del barrido
+    )
+    
+    # Simulamos la intensidad
+    int_co_var = np.abs(campo_co_var)**2
+    
+    # Normalizamos la intensidad 
+    max_intensidad_co_var = np.max(int_co_var)
+    if max_intensidad_co_var > 0:
+        intensidad_log_co = np.log1p(int_co_var / max_intensidad_co_var * 10)
+        intensidad_norm_co = intensidad_log_co / np.max(intensidad_log_co)
+    else:
+        intensidad_norm_co = int_co_var
+    
+
+    # Usamos la imagen normalizada 'intensidad_norm_co' que es la que se grafica
+    
+    # Métrica de Contraste
+    metrica_contraste = np.std(intensidad_norm_co)
+    
+
+    # Guardamos los resultados
+    resultados_intensidad.append(intensidad_norm_co)
+    resultados_pupilas.append(pupila_co_var)
+    resultados_contraste.append(metrica_contraste)
+
+
+print("--- BARRIDO COMPLETO ---")
+
+
+# Simulamos el Zernike Ideal para comparar
+R_punto_fase_cf = R_pupila * 0.05 # Usamos el 5% como referencia
 campo_cf, L_cf, pupila_cf, _ = simular_con_convolucion(
     objeto, L_objeto, M, long_onda, f_MO, f_TL, 
     tipo_filtro='contraste_fase', 
     R_pupila=R_pupila,
     R_punto_fase=R_punto_fase_cf
 )
-
-# Simulamos las intensidades
-int_co_var = np.abs(campo_co_var)**2
+# (El resto de esta simulación es solo para la Figura 3, la dejamos igual)
 int_cf = np.abs(campo_cf)**2
-
-# Normalizamos las intensidades para mejor visualización
-max_intensidad_co_var = np.max(int_co_var)
 max_intensidad_cf = np.max(int_cf)
-
-#Buscamos una intensidad para que se vea bien 
-if max_intensidad_co_var > 0:
-    intensidad_log_co = np.log1p(int_co_var / max_intensidad_co_var * 10)
-    intensidad_norm_co = intensidad_log_co / np.max(intensidad_log_co)
-else:
-    intensidad_norm_co = int_co_var
-    
-    
 if max_intensidad_cf > 0:
     intensidad_log_cf = np.log1p(int_cf / max_intensidad_cf * 10)
     intensidad_norm_cf = intensidad_log_cf / np.max(intensidad_log_cf)
@@ -168,8 +188,6 @@ else:
     intensidad_norm_cf = int_cf
 
 print("\nMostrando resultados...")
-
-
 
 
 # Figura 1: Original vs Zernike Ideal
@@ -180,7 +198,7 @@ ext_cam = [-L_co/2 * 1e6, L_co/2 * 1e6, -L_co/2 * 1e6, L_co/2 * 1e6]
 
 # Graficamos la Fase Original (la "verdad")
 plt.subplot(1, 2, 1)
-plt.imshow(np.angle(objeto), cmap='gray', extent=ext_obj) 
+plt.imshow(np.angle(objeto), cmap='twilight', extent=ext_obj) 
 
 plt.title('Fase Original de la Muestra')
 plt.xlabel('ξ (μm)')
@@ -189,8 +207,10 @@ plt.colorbar(label='Fase (rad)')
 
 # Graficamos el Zernike Ideal (el "blanco")
 plt.subplot(1, 2, 2) 
-plt.imshow(intensidad_norm_co, cmap='gray', extent=ext_cam, vmin=0, vmax=1)
-plt.title('Imagen contraste de fase')
+# Mostramos el mejor resultado del barrido (el de 90°)
+idx_90_grados = barrido_fases.tolist().index(np.pi/2)
+plt.imshow(resultados_intensidad[idx_90_grados], cmap='gray', extent=ext_cam, vmin=0, vmax=1)
+plt.title('Imagen (Mejor resultado del barrido a 90°)')
 plt.xlabel('u (μm)')
 plt.ylabel('v (μm)')
 
@@ -198,53 +218,38 @@ plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.show() 
 
 
-# Figura 1: Imágenes Simuladas
-plt.figure(figsize=(12, 6)) 
-plt.suptitle("Comparación de Métodos de Fase (Intensidad)", fontsize=16)
-ext_cam = [-L_co/2 * 1e6, L_co/2 * 1e6, -L_co/2 * 1e6, L_co/2 * 1e6]
+# Figura 2: Barrido de fases
+N_fases = len(barrido_fases)
+# Ajusta el tamaño de la figura según cuántos items tengas
+plt.figure(figsize=(N_fases * 4, 6)) # Un poco más alta para el texto
+plt.suptitle(f"Barrido de Desfase del Stop (Radio = {R_bloqueo_co_var/R_pupila*100:.1f}%, Atenuación = {atenuacion_co*100:.0f}%)", fontsize=16)
 
-plt.subplot(1, 2, 1)
-plt.imshow(intensidad_norm_co, cmap='gray', extent=ext_cam, vmin=0, vmax=1) 
-plt.title('Imagen (Contraste de Fase)')
-plt.xlabel('u (μm)')
-plt.ylabel('v (μm)')
+for i in range(N_fases):
+    ax = plt.subplot(1, N_fases, i + 1)
+    
+    # Extraemos todos los datos de este paso
+    intensidad_actual = resultados_intensidad[i]
+    fase_actual = barrido_fases[i]
+    contraste_actual = resultados_contraste[i]
 
-plt.subplot(1, 2, 2) 
-plt.imshow(intensidad_norm_cf, cmap='gray', extent=ext_cam, vmin=0, vmax=1)
-plt.title('Imagen (Zernike)')
-plt.xlabel('u (μm)')
-plt.ylabel('v (μm)')
+    
+    # Graficamos la imagen de intensidad
+    plt.imshow(intensidad_actual, cmap='gray', extent=ext_cam, vmin=0, vmax=1)
+    
+    # Titulos
+    titulo = (
+        f"Desfase = {np.degrees(fase_actual):.0f}°\n"
+        f"Contraste (std): {contraste_actual:.4f}\n"
+        
+    )
+    plt.title(titulo)
+    
+    plt.xlabel('u (μm)')
+    if i == 0:
+        plt.ylabel('v (μm)')
+    else:
+        ax.set_yticklabels([]) 
 
-plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-plt.show() 
-
-
-# Figura 2: Pupilas
-
-plt.figure(figsize=(12, 5))
-plt.suptitle("Comparación de Amplitud de Pupilas de Fase", fontsize=16)
-ext_pup = [-L_pupila/2 * 1000, L_pupila/2 * 1000, -L_pupila/2 * 1000, L_pupila/2 * 1000]
-zoom_lim = R_pupila * 1.2 * 1000
-
-plt.subplot(1, 2, 1)
-
-# Mostramos la Amplitud. El stop central se verá en escala de grises.
-plt.imshow(np.abs(pupila_co_var), cmap='gray', extent=ext_pup, vmin=0, vmax=1)
-plt.title('Pupila (Amplitud)')
-plt.xlabel('x (mm)')
-plt.ylabel('y (mm)')
-plt.xlim(-zoom_lim, zoom_lim)
-plt.ylim(-zoom_lim, zoom_lim)
-plt.colorbar(label='Atenuación (Amplitud)')
-
-plt.subplot(1, 2, 2)
-
-plt.imshow(np.angle(pupila_cf), cmap='twilight', extent=ext_pup, vmin=-np.pi, vmax=np.pi)
-plt.title('Pupila Zernike (Fase)')
-plt.xlabel('x (mm)')
-plt.ylabel('y (mm)')
-plt.xlim(-zoom_lim, zoom_lim)
-plt.ylim(-zoom_lim, zoom_lim)
-
-plt.tight_layout()
+plt.tight_layout(rect=[0, 0.03, 1, 0.9])
 plt.show()
+
