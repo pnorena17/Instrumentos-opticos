@@ -40,7 +40,7 @@ def dividir_imagen_en_bloques(matriz_imagen, filas_grid=4, cols_grid=5):
     print(f"Imagen dividida en {len(bloques)} bloques de aprox {alto_bloque}x{ancho_bloque} px.")
     return bloques
 
-def crear_panel_qr(lista_qrs, filas=4, cols=5, padding=2):
+def crear_panel_qr(lista_qrs, filas=4, cols=5, padding=0):
     if not lista_qrs:
         return np.zeros((10, 10))
 
@@ -109,8 +109,11 @@ def generar_qr_matriz(imagen_a_codificar, escala=1):
             # Creamos el QR. Segno detecta automáticamente que son bytes.
             qr = segno.make(contenido_completo, micro=False, error='H')
             
+            #Le quitamos el borde al QR
+            iterador_sin_borde = qr.matrix_iter(border=0)
+
             # Extraer matriz
-            matriz_qr = np.array([list(fila) for fila in qr.matrix_iter()], dtype=int)
+            matriz_qr = np.array([list(fila) for fila in iterador_sin_borde], dtype=int)
             
             if escala > 1:
                 matriz_qr = np.repeat(np.repeat(matriz_qr, escala, axis=0), escala, axis=1)
@@ -136,7 +139,7 @@ matriz = generar_qr_matriz(lista_frames[0])
 plt.figure(figsize=(6, 6))
 # cmap='binary': 0 lo pinta blanco, 1 lo pinta negro (Estándar QR)
 # vmin=0, vmax=1: Asegura que el contraste sea total
-plt.imshow(matriz, cmap='binary', vmin=0, vmax=1) 
+plt.imshow(matriz, cmap='gray', vmin=0, vmax=1) 
 plt.title(f"Código QR ({matriz.shape[0]}x{matriz.shape[1]})")
 plt.axis('off') # Quitamos los números de los ejes para que se vea limpio
 plt.show()
