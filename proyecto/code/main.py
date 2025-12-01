@@ -17,7 +17,8 @@ if len(lista_frames) > 0:
     frame = lista_frames[0]
 
     # Llamamos a la función de encriptar
-    img_cifrada, k1, k2 = encriptar_drpe(frame)
+    radio = 200 #pixeles
+    img_cifrada, k1, k2, mascara_pupila = encriptar_drpe(frame, radio_pupila=radio)
     
     # Probamos desencriptar para ver si recuperamos la imagen
     img_recuperada = desencriptar_drpe(img_cifrada, k1, k2)
