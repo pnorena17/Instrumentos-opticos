@@ -4,6 +4,7 @@ from gif_to_frame import extraer_frames
 from encript_image import encriptar_drpe
 from encript_image import desencriptar_drpe
 import generate_qr as gqr
+from reconstruccion import reconstruir_mosaico_raw
 
 ## Extraemos el video a procesar
 # Ruta del archivo
@@ -27,7 +28,7 @@ if len(lista_frames) > 0:
     print(f"Error cuadrático medio (MSE): {error:.5f}")
 
     # 4. Graficar
-    plt.figure(figsize=(15, 5))
+    plt.figure(figsize=(12, 4))
 
     # Imagen Original
     plt.subplot(1, 3, 1)
@@ -50,13 +51,28 @@ if len(lista_frames) > 0:
     plt.tight_layout()
     plt.show()
 
-matriz = gqr.generar_qr_matriz(frame)
+FILAS = 6
+COLS = 8
 
-"""# 2. Lo visualizamos
+matriz = gqr.generar_mosaico_raw(frame, filas=FILAS, cols=COLS, escala=2)
+
+# Lo visualizamos
 plt.figure(figsize=(6, 6))
-# cmap='binary': 0 lo pinta blanco, 1 lo pinta negro (Estándar QR)
-# vmin=0, vmax=1: Asegura que el contraste sea total
-plt.imshow(matriz, cmap='binary', vmin=0, vmax=1) 
+plt.imshow(matriz, cmap='binary', vmin=0, vmax=1)  # vmin=0, vmax=1: Asegura que el contraste sea total
 plt.title(f"Código QR ({matriz.shape[0]}x{matriz.shape[1]})")
 plt.axis('off') # Quitamos los números de los ejes para que se vea limpio
-plt.show()"""
+plt.show()
+
+imagen_final = reconstruir_mosaico_raw(matriz)
+
+# 3. Visualizar CON PROTECCIÓN
+if imagen_final is not None:
+    plt.figure(figsize=(10, 10))
+    # cmap='binary': 0 es blanco, 1 es negro.
+    # Si tus QRs salen invertidos (negro donde debe ser blanco), cambia a cmap='gray' o invierte (1 - mosaico)
+    plt.imshow(imagen_final, cmap='gray', vmin=0, vmax=1)
+    plt.title(f"Mosaico Generado ({FILAS}x{COLS})")
+    plt.axis('off')
+    plt.show()
+else:
+    print("No se pudo graficar porque falló la generación de los QRs.")
