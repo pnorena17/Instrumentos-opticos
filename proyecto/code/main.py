@@ -10,15 +10,16 @@ import multiplexing as mux
 
 ## Extraemos el video a procesar
 # Ruta del archivo
-archivo_gif = r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\proyecto\video_test\SpAQ.gif" 
+#archivo_gif = r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\proyecto\video_test\SpAQ.gif"
+archivo_gif = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
 # Creamos la lista con los frames extraidos del gif
 lista_frames = extraer_frames(archivo_gif)
 
-FILAS = 6
-COLS = 8
+FILAS = 4
+COLS = 3
 
-"""
-if len(lista_frames) > 0:
+
+"""if len(lista_frames) > 0:
     # Vamos a trabajar solo con el primer frame para probar
     frame = lista_frames[0]
     
@@ -73,7 +74,7 @@ if len(lista_frames) > 0:
 
     plt.tight_layout()
     plt.show()
-"""
+
 
 #FILAS = 6
 #COLS = 8
@@ -81,7 +82,7 @@ if len(lista_frames) > 0:
 #matriz = gqr.generar_mosaico_raw(frame, filas=FILAS, cols=COLS, escala=2)
 
 # Lo visualizamos
-"""
+
 plt.figure(figsize=(6, 6))
 plt.imshow(matriz_qr, cmap='binary', vmin=0, vmax=1)  # vmin=0, vmax=1: Asegura que el contraste sea total
 plt.title(f"Código QR ({matriz_recuperada.shape[0]}x{matriz_recuperada.shape[1]})")
@@ -100,15 +101,15 @@ if imagen_final is not None:
     plt.axis('off')
     plt.show()
 else:
-    print("No se pudo graficar porque falló la generación de los QRs.")
-"""
+    print("No se pudo graficar porque falló la generación de los QRs.")"""
+
 
 # Prueba Multipelxing
 
 # Configuración del Multiplexado
 NUM_FRAMES = 2  # Cuántos frames vamos a sumar
 RADIO_PRUEBA = None 
-ESCALA_QR = 2 # Entre mas mejor escala para resistir el ruido de suma, pero consume muchos recursos (no me funciona con mas de 6)
+ESCALA_QR = 2 # Entre mas mejor escala para resistir el ruido de suma
 
 if len(lista_frames) >= NUM_FRAMES:
     
