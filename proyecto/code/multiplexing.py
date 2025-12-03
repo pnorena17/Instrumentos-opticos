@@ -2,7 +2,7 @@ import numpy as np
 from scipy.ndimage import median_filter
 import generate_qr as gqr
 from encript_image import encriptar_drpe, desencriptar_drpe
-from reconstruccion import reconstruir_mosaico_raw
+from reconstruccion import reconstruir_mosaico
 
 def crear_paquete_multiplexado(lista_frames, num_frames, filas, cols, escala, radio_pupila=None):
     if len(lista_frames) < num_frames:
@@ -69,7 +69,7 @@ def recuperar_y_limpiar_frame(paquete_optico, llaves, filas, cols):
         matriz_limpia = median_filter(matriz_binaria, size=3) 
         
         # Intento Directo
-        resultado = reconstruir_mosaico_raw(matriz_limpia)
+        resultado = reconstruir_mosaico(matriz_limpia)
         if resultado is not None:
             return resultado, matriz_limpia, f"Recuperado (Umbral {umbral:.2f})"
 
