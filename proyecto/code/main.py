@@ -4,9 +4,8 @@ from gif_to_frame import extraer_frames
 from encript_image import encriptar_drpe
 from encript_image import desencriptar_drpe
 import generate_qr as gqr
-from reconstruccion import reconstruir_mosaico_raw
-# Importamos las nuevas funciones del archivo separado
-import multiplexing as mux 
+import reconstruccion as rqr
+#import multiplexing as mux 
 
 ## Extraemos el video a procesar
 # Ruta del archivo
@@ -15,21 +14,23 @@ archivo_gif = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-optic
 # Creamos la lista con los frames extraidos del gif
 lista_frames = extraer_frames(archivo_gif)
 
-FILAS = 4
-COLS = 3
+FILAS = 6
+COLS = 6
 
 
-"""if len(lista_frames) > 0:
+if len(lista_frames) > 0:
     # Vamos a trabajar solo con el primer frame para probar
     frame = lista_frames[0]
     
     #Generamos la matriz con los QR de cada frame
-    matriz_qr = gqr.generar_mosaico_raw(frame, filas=FILAS, cols=COLS, escala=2)
+    lista_qr = gqr.generar_lista_qrs(frame, filas=FILAS, cols=COLS, escala=2)
+
+    matriz_qr = lista_qr[0]
 
     # Llamamos a la función de encriptar
     #radio = 400 #pixeles
     #img_cifrada, k1, k2, mascara_pupila = encriptar_drpe(frame, radio_pupila=radio)
-    matriz_cifrada, k1, k2, mascara_pupila = encriptar_drpe(matriz_qr, radio_pupila=1900)
+    matriz_cifrada, k1, k2, mascara_pupila = encriptar_drpe(matriz_qr, radio_pupila=100)
     
     
     # Probamos desencriptar para ver si recuperamos la imagen
@@ -89,7 +90,7 @@ plt.title(f"Código QR ({matriz_recuperada.shape[0]}x{matriz_recuperada.shape[1]
 plt.axis('off') # Quitamos los números de los ejes para que se vea limpio
 plt.show()
 
-imagen_final = reconstruir_mosaico_raw(matriz_recuperada_ruidosa)
+imagen_final = rqr.leer_qr_individual(matriz_recuperada_ruidosa)
 
 # 3. Visualizar CON PROTECCIÓN
 if imagen_final is not None:
@@ -101,9 +102,9 @@ if imagen_final is not None:
     plt.axis('off')
     plt.show()
 else:
-    print("No se pudo graficar porque falló la generación de los QRs.")"""
+    print("No se pudo graficar porque falló la generación de los QRs.")
 
-
+"""
 # Prueba Multipelxing
 
 # Configuración del Multiplexado
@@ -167,4 +168,4 @@ if len(lista_frames) >= NUM_FRAMES:
         plt.show()
 
 else:
-    print("No hay suficientes frames en el GIF para el multiplexado solicitado.")
+    print("No hay suficientes frames en el GIF para el multiplexado solicitado.")"""
