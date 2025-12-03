@@ -2,109 +2,135 @@ from pyzbar.pyzbar import decode
 from PIL import Image
 import numpy as np
 
-def reconstruir_mosaico_raw(mosaico_input):
-    # Preparar imagen para pyzbar (0-255 uint8)
-    if isinstance(mosaico_input, np.ndarray):
-        # Si tu matriz usa 1=Negro, 0=Blanco:
-        # Invertimos y escalamos: 1->0, 0->255
-        img_uint8 = ((1 - mosaico_input) * 255).astype(np.uint8)
+def leer_qr_individual(matriz_qr):
+    """
+    Intenta leer un SOLO QR (matriz numpy binaria o gris).
+    Retorna el diccionario de datos o None si falla.
+    """
+    # 1. Preparar imagen para pyzbar (0-255 uint8)
+    # Asumimos que la entrada es 0 (negro/blanco) y 1 (blanco/negro)
+    # Pyzbar lee mejor códigos oscuros sobre fondo claro.
+    # Si tu matriz tiene 1=Luz/Blanco y 0=Negro -> Invertimos: (1-x)*255
+    if isinstance(matriz_qr, np.ndarray):
+        # Normalizar si no es binaria pura (por si viene de DRPE con ruido)
+        if matriz_qr.max() <= 1.0:
+            img_uint8 = ((1 - matriz_qr) * 255).astype(np.uint8)
+        else:
+            img_uint8 = (255 - matriz_qr).astype(np.uint8)
+            
         img = Image.fromarray(img_uint8)
     else:
-        img = mosaico_input
+        return None
 
-    print("Escaneando QRs (esto puede tardar si la imagen es gigante)...")
+    # 2. Decodificar
     decoded_objects = decode(img)
     
     if not decoded_objects:
-        print("Fallo de detección. Verifica: 1. Resolución, 2. Borde (Quiet Zone), 3. Contraste.")
         return None
-        
-    print(f"Códigos detectados: {len(decoded_objects)}")
     
+    # Tomamos el primero (debería haber solo uno por matriz)
+    obj = decoded_objects[0]
+    
+    try:
+        texto = obj.data.decode('utf-8')
+        # Parsear "IDX:H:W:TF:TC:DATOS"
+        partes = texto.split(':')
+        
+        if len(partes) < 6: return None
+        
+        idx = int(partes[0])
+        h = int(partes[1])
+        w = int(partes[2])
+        filas_tot = int(partes[3])
+        cols_tot = int(partes[4])
+        raw_str = partes[5]
+        
+        # Reconstruir bloque de imagen
+        array_plano = np.array(list(map(int, raw_str)))
+        
+        if len(array_plano) == h * w:
+            bloque = array_plano.reshape((h, w))
+            return {
+                'idx': idx, 
+                'bloque': bloque, 
+                'h': h, 
+                'w': w,
+                'filas_tot': filas_tot,
+                'cols_tot': cols_tot
+            }
+    except Exception as e:
+        print(f"Error parseando QR {idx if 'idx' in locals() else '?'}: {e}")
+        
+    return None
+
+def reconstruir_mosaico(lista_qrs_limpios):
+    """
+    Recibe una LISTA de matrices QR (ya desencriptadas y limpias).
+    Lee cada una, extrae su posición y rearma la imagen final.
+    """
     datos_bloques = []
     config_grid = None
     
-    for obj in decoded_objects:
-        try:
-            texto = obj.data.decode('utf-8')
-            # Parsear "IDX:H:W:TF:TC:DATOS"
-            partes = texto.split(':')
-            
-            if len(partes) < 6: continue
-            
-            idx = int(partes[0])
-            h = int(partes[1])
-            w = int(partes[2])
-            filas_tot = int(partes[3])
-            cols_tot = int(partes[4])
-            raw_str = partes[5] # String de '0's y '1's
-            
+    print(f"Intentando leer {len(lista_qrs_limpios)} QRs...")
+
+    # 1. Leer cada QR de la lista
+    for i, qr in enumerate(lista_qrs_limpios):
+        datos = leer_qr_individual(qr)
+        if datos:
+            datos_bloques.append(datos)
             if config_grid is None:
-                config_grid = (filas_tot, cols_tot)
-            
-            # Convertir string "0101" a array numpy
-            # map(int, raw_str) convierte cada char a entero
-            array_plano = np.array(list(map(int, raw_str)))
-            
-            # Validar longitud
-            if len(array_plano) == h * w:
-                bloque = array_plano.reshape((h, w))
-                datos_bloques.append({'idx': idx, 'bloque': bloque, 'h': h, 'w': w})
-            else:
-                print(f"Error integridad bloque {idx}: esperados {h*w}, recibidos {len(array_plano)}")
-                
-        except Exception as e:
-            print(f"Error procesando un QR: {e}")
+                config_grid = (datos['filas_tot'], datos['cols_tot'])
+        else:
+            print(f" - QR #{i} no se pudo leer (daño excesivo o ruido).")
 
     if not datos_bloques:
+        print("No se pudo recuperar ningún bloque válido.")
         return None
 
-    # Ordenar
+    # 2. Ordenar por índice para asegurar el pegado correcto
     datos_bloques.sort(key=lambda x: x['idx'])
     
-    # Verificar si faltan bloques
-    indices = [b['idx'] for b in datos_bloques]
-    max_idx = max(indices)
-    if len(indices) < (max_idx + 1):
-        print(f"ADVERTENCIA: Faltan bloques. Detectados {len(indices)} de {max_idx+1}")
-
-    # STITCHING (Pegado)
+    # 3. Preparar lienzo final
+    # Usamos la configuración del primer bloque leído para saber el tamaño total
     tf, tc = config_grid
     
-    # Crear estructura de filas
-    grid_reconstruido = []
-    ptr = 0
-    for r in range(tf):
-        fila = []
-        for c in range(tc):
-            # Buscar bloque con idx correcto (asumiendo orden, o búsqueda segura)
-            # Dado que ordenamos la lista, intentamos sacar en orden
-            if ptr < len(datos_bloques) and datos_bloques[ptr]['idx'] == (r * tc + c):
-                fila.append(datos_bloques[ptr])
-                ptr += 1
-            else:
-                # Bloque perdido: Rellenar con negro o saltar
-                # Para robustez, creamos un bloque negro del tamaño esperado (estimado)
-                # Esto es complejo sin saber el tamaño exacto del perdido, 
-                # así que simplemente no agregamos nada y quedará un hueco en el array final.
-                pass
-        grid_reconstruido.append(fila)
-
-    # Calcular tamaño final
-    alto_fin = sum(max((b['h'] for b in f), default=0) for f in grid_reconstruido)
-    ancho_fin = sum(b['w'] for b in grid_reconstruido[0]) if grid_reconstruido[0] else 0
+    # Necesitamos saber el tamaño de los bloques para crear el lienzo.
+    # Asumimos que todos son casi iguales, usamos el máximo encontrado.
+    max_h = max(b['h'] for b in datos_bloques)
+    max_w = max(b['w'] for b in datos_bloques)
     
+    # Lienzo vacío
+    alto_fin = tf * max_h
+    ancho_fin = tc * max_w
     imagen_final = np.zeros((alto_fin, ancho_fin), dtype=int)
     
-    y = 0
-    for fila in grid_reconstruido:
-        x = 0
-        max_h_fila = 0
-        for b in fila:
-            h, w = b['h'], b['w']
-            imagen_final[y:y+h, x:x+w] = b['bloque']
-            x += w
-            max_h_fila = max(max_h_fila, h)
-        y += max_h_fila
+    print(f"Reconstruyendo imagen de {alto_fin}x{ancho_fin} px con {len(datos_bloques)} bloques...")
+
+    # 4. Pegar bloques en su sitio
+    for b in datos_bloques:
+        idx = b['idx']
+        h, w = b['h'], b['w']
+        bloque = b['bloque']
         
+        # Calcular fila y columna basada en el índice lineal
+        r = idx // tc
+        c = idx % tc
+        
+        # Coordenadas pixel (usando el tamaño real del bloque o el maximo? 
+        # Usamos el tamaño del bloque para pegarlo, pero la posición basada en max_h/max_w 
+        # para mantener la grilla alineada si hay pequeñas variaciones)
+        y = r * max_h 
+        x = c * max_w
+        
+        # Pegar (con cuidado de no salirnos si el bloque es raro)
+        # Recortamos si se pasa, o rellenamos
+        y_end = min(y + h, alto_fin)
+        x_end = min(x + w, ancho_fin)
+        
+        # Ajustar bloque si se recorta
+        h_eff = y_end - y
+        w_eff = x_end - x
+        
+        imagen_final[y:y_end, x:x_end] = bloque[:h_eff, :w_eff]
+
     return imagen_final
