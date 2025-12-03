@@ -1,39 +1,69 @@
-from pyzbar.pyzbar import decode
+from pyzbar.pyzbar import decode, ZBarSymbol
 from PIL import Image
+import cv2
 import numpy as np
 
 def leer_qr_individual(matriz_qr):
     """
-    Intenta leer un SOLO QR (matriz numpy binaria o gris).
-    Retorna el diccionario de datos o None si falla.
+    Intenta leer un SOLO QR con pre-procesamiento agresivo.
     """
-    # 1. Preparar imagen para pyzbar (0-255 uint8)
-    # Asumimos que la entrada es 0 (negro/blanco) y 1 (blanco/negro)
-    # Pyzbar lee mejor códigos oscuros sobre fondo claro.
-    # Si tu matriz tiene 1=Luz/Blanco y 0=Negro -> Invertimos: (1-x)*255
+    # 1. Convertir a uint8 (0-255)
+    # Si viene de óptica, puede ser float o complex. Tomamos magnitud y normalizamos.
     if isinstance(matriz_qr, np.ndarray):
-        # Normalizar si no es binaria pura (por si viene de DRPE con ruido)
-        if matriz_qr.max() <= 1.0:
-            img_uint8 = ((1 - matriz_qr) * 255).astype(np.uint8)
-        else:
-            img_uint8 = (255 - matriz_qr).astype(np.uint8)
-            
-        img = Image.fromarray(img_uint8)
+        img_data = np.abs(matriz_qr) # Asegurar reales positivos
+        
+        # Normalizar a 0-255
+        if img_data.max() > 0:
+            img_data = (img_data / img_data.max()) * 255
+        
+        img_uint8 = img_data.astype(np.uint8)
+        
+        # --- PRE-PROCESAMIENTO CLAVE ---
+        
+        # A. UMBRALIZADO (Binarización)
+        # Esto elimina el gris/ruido y deja solo BLANCO o NEGRO puro.
+        _, img_bin = cv2.threshold(img_uint8, 127, 255, cv2.THRESH_BINARY)
+        
+        # B. ZOOM (Upscaling)
+        # Los lectores fallan con QRs pequeños. Lo agrandamos 2x o 3x.
+        h, w = img_bin.shape
+        scale = 3
+        img_grande = cv2.resize(img_bin, (w * scale, h * scale), interpolation=cv2.INTER_NEAREST)
+        
+        # C. BORDE BLANCO (Quiet Zone)
+        # ZBar NECESITA un marco blanco alrededor.
+        # Si tu QR es negro sobre blanco (estándar), agregamos borde blanco (255).
+        # Si tu QR es blanco sobre negro (negativo), ZBar a veces falla.
+        # Vamos a probar leerlo tal cual, y si falla, lo invertimos.
+        
+        img_con_borde = cv2.copyMakeBorder(
+            img_grande, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=255
+        )
+        
+        # Convertir a PIL para ZBar
+        img_pil = Image.fromarray(img_con_borde)
+        
     else:
         return None
 
     # 2. Decodificar
-    decoded_objects = decode(img)
+    # Usamos symbols=[ZBarSymbol.QRCODE] para que NO busque PDF417 y quite las advertencias
+    decoded_objects = decode(img_pil, symbols=[ZBarSymbol.QRCODE])
+    
+    # INTENTO 2: Si falla, Invertimos el color (Negativo)
+    if not decoded_objects:
+        img_inv = 255 - img_con_borde
+        img_pil_inv = Image.fromarray(img_inv)
+        decoded_objects = decode(img_pil_inv, symbols=[ZBarSymbol.QRCODE])
     
     if not decoded_objects:
         return None
     
-    # Tomamos el primero (debería haber solo uno por matriz)
+    # Procesar datos (igual que tenías)
     obj = decoded_objects[0]
     
     try:
         texto = obj.data.decode('utf-8')
-        # Parsear "IDX:H:W:TF:TC:DATOS"
         partes = texto.split(':')
         
         if len(partes) < 6: return None
@@ -45,7 +75,6 @@ def leer_qr_individual(matriz_qr):
         cols_tot = int(partes[4])
         raw_str = partes[5]
         
-        # Reconstruir bloque de imagen
         array_plano = np.array(list(map(int, raw_str)))
         
         if len(array_plano) == h * w:
@@ -59,7 +88,7 @@ def leer_qr_individual(matriz_qr):
                 'cols_tot': cols_tot
             }
     except Exception as e:
-        print(f"Error parseando QR {idx if 'idx' in locals() else '?'}: {e}")
+        print(f"Error parseando QR: {e}")
         
     return None
 
