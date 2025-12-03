@@ -75,7 +75,7 @@ def recuperar_y_limpiar_frame(paquete_optico, llaves, filas, cols):
 
         # Intento Invertido (Por si la fase queda al revés)
         matriz_inv = 1 - matriz_limpia
-        resultado = reconstruir_mosaico_raw(matriz_inv)
+        resultado = reconstruir_mosaico(matriz_inv)
         if resultado is not None:
             return resultado, matriz_inv, f"Recuperado (Invertido, Umbral {umbral:.2f})"
             
