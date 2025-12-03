@@ -18,7 +18,7 @@ FILAS = 10
 COLS = 10
 RADIO_PUPILA = 0.65 #Proporcion
 
-#Prueba DRPE con QR
+"""#Prueba DRPE con QR
 if len(lista_frames) > 0:
 
     gif_recuperado = []
@@ -30,11 +30,11 @@ if len(lista_frames) > 0:
 
         gif_recuperado.append(frame_recuperado)
 
-    reproducir_gif(gif_recuperado)
+    reproducir_gif(gif_recuperado)"""
 
 
 
-"""# Prueba Multiplexing
+# Prueba Multiplexing
 
 # Configuración del Multiplexado
 NUM_FRAMES = 2  # Cuántos frames vamos a sumar
@@ -46,34 +46,22 @@ test_qr = gqr.generar_lista_qrs(lista_frames[0], filas=FILAS, cols=COLS, escala=
 if len(test_qr) >= NUM_FRAMES:
     
     # Llamamos a la funcion externa para crear el paquete
-    paquete, llaves = mux.crear_paquete_multiplexado(
-        test_qr, NUM_FRAMES, radio_pupila=RADIO_PRUEBA
+    paquete, llaves, dims_orig = mux.multiplexar_imagen_en_partes(
+        test_qr[0], 
+        filas_grid=2, 
+        cols_grid=2, 
+        radio_pupila=50
     )
-    
-    if paquete is not None:
-        qrs_recuperados = []
-
-        # Iteramos para recuperar cada uno
-        for i, llaves_qr in enumerate(llaves):
-            print(f"Recuperando QR {i+1}...")
-            
-            # A. Extraer la imagen binaria sucia del paquete
-            matriz_sucia = mux.recuperar_qr_del_paquete(paquete, llaves_qr)
-            
-            # B. Intentar limpiar y leer el QR
-            # IMPORTANTE: Aquí pasamos la matriz sucia directamente.
-            
-            # Simplemente guardamos la matriz sucia en la lista.
-            # La función final intentará leerla.
-            qrs_recuperados.append(matriz_sucia)
-            
-        
-# 4. Reconstrucción Final
-# Pasamos la lista de matrices recuperadas (aunque tengan ruido)
-imagen_final = rqr.reconstruir_mosaico(qrs_recuperados)
-
-if imagen_final is not None:
-    plt.imshow(imagen_final, cmap='gray')
+    plt.figure()
+    plt.imshow(np.log1p(np.abs(paquete)), cmap='gray')
+    plt.title("Paquete Óptico")
     plt.show()
-else:
-    print("No se pudo reconstruir la imagen.")"""
+
+    imagen_final = mux.recuperar_y_ensamblar_imagen(paquete, llaves, dims_orig)
+
+    # 4. Ver resultado
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1); plt.imshow(test_qr[0], cmap='gray'); plt.title("Original")
+    plt.subplot(1, 2, 2); plt.imshow(imagen_final, cmap='gray'); plt.title("Recuperada del Mosaico")
+    plt.show()
+            
