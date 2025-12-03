@@ -1,15 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.ndimage import median_filter
 from gif_to_frame import extraer_frames
-from encript_image import encriptar_drpe
-from encript_image import desencriptar_drpe
 import generate_qr as gqr
 import reconstruccion as rqr
-from qr_basic import encriptacion_imagen_qr
+import multiplexing as mux 
 from play_gif import reproducir_gif
-
-#import multiplexing as mux 
+from qr_basic import encriptacion_imagen_qr
 
 ## Extraemos el video a procesar
 # Ruta del archivo
@@ -22,13 +18,14 @@ FILAS = 10
 COLS = 10
 RADIO_PUPILA = 0.65 #Proporcion
 
+#Prueba DRPE con QR
 if len(lista_frames) > 0:
 
     gif_recuperado = []
 
     for i, frame in enumerate(lista_frames):
         # Vamos a trabajar solo con el primer frame para probar
-        print(f"Encripatando el frame {i+1}")
+        print(f"Encriptando el frame {i+1}")
         frame_recuperado = encriptacion_imagen_qr(frame, FILAS, COLS, RADIO_PUPILA, graph=False)
 
         gif_recuperado.append(frame_recuperado)
@@ -36,68 +33,47 @@ if len(lista_frames) > 0:
     reproducir_gif(gif_recuperado)
 
 
-"""
-# Prueba Multipelxing
+
+"""# Prueba Multiplexing
 
 # Configuración del Multiplexado
 NUM_FRAMES = 2  # Cuántos frames vamos a sumar
 RADIO_PRUEBA = None 
 ESCALA_QR = 2 # Entre mas mejor escala para resistir el ruido de suma
 
-if len(lista_frames) >= NUM_FRAMES:
+test_qr = gqr.generar_lista_qrs(lista_frames[0], filas=FILAS, cols=COLS, escala=ESCALA_QR)
+
+if len(test_qr) >= NUM_FRAMES:
     
     # Llamamos a la funcion externa para crear el paquete
-    paquete, llaves, frames_orig = mux.crear_paquete_multiplexado(
-        lista_frames, NUM_FRAMES, FILAS, COLS, ESCALA_QR, radio_pupila=RADIO_PRUEBA
+    paquete, llaves = mux.crear_paquete_multiplexado(
+        test_qr, NUM_FRAMES, radio_pupila=RADIO_PRUEBA
     )
     
     if paquete is not None:
-        
-        # Preparamos gráfica grande
-        plt.figure(figsize=(12, 4 * NUM_FRAMES))
-        
-        # Iteramos para recuperar cada uno
-        for i in range(NUM_FRAMES):
-            print(f"Recuperando Frame {i+1}...")
-            
-            # Llamamos a la funcion externa de recuperacion
-            frame_final, qr_limpio, estado = mux.recuperar_y_limpiar_frame(
-                paquete, llaves[i], FILAS, COLS
-            )
-            
-            # Graficamos por fila
-            
-            # Col 1: Original
-            plt.subplot(NUM_FRAMES, 3, (i*3) + 1)
-            plt.imshow(frames_orig[i], cmap='gray')
-            plt.title(f"Frame {i+1} Original")
-            plt.axis('off')
-            
-            # Col 2: QR Recuperado (Binarizado)
-            plt.subplot(NUM_FRAMES, 3, (i*3) + 2)
-            plt.imshow(qr_limpio, cmap='binary')
-            plt.title(f"QR {i+1} Recuperado")
-            plt.axis('off')
-            
-            # Col 3: Resultado Final
-            plt.subplot(NUM_FRAMES, 3, (i*3) + 3)
-            if frame_final is not None:
-                plt.imshow(frame_final, cmap='gray')
-                plt.title(f"Recuperado: {estado}")
-            else:
-                plt.text(0.5, 0.5, "FALLO", ha='center', color='red')
-                plt.title("Fallo")
-            plt.axis('off')
-            
-        plt.tight_layout()
-        plt.show()
-        
-        # Visualizar el paquete encriptado (por probar)
-        plt.figure(figsize=(5,5))
-        plt.imshow(np.log(np.abs(paquete) + 1), cmap='gray')
-        plt.title(f"Paquete Multiplexado ({NUM_FRAMES} frames)")
-        plt.axis('off')
-        plt.show()
+        qrs_recuperados = []
 
+        # Iteramos para recuperar cada uno
+        for i, llaves_qr in enumerate(llaves):
+            print(f"Recuperando QR {i+1}...")
+            
+            # A. Extraer la imagen binaria sucia del paquete
+            matriz_sucia = mux.recuperar_qr_del_paquete(paquete, llaves_qr)
+            
+            # B. Intentar limpiar y leer el QR
+            # IMPORTANTE: Aquí pasamos la matriz sucia directamente.
+            
+            # Simplemente guardamos la matriz sucia en la lista.
+            # La función final intentará leerla.
+            qrs_recuperados.append(matriz_sucia)
+            
+        
+# 4. Reconstrucción Final
+# Pasamos la lista de matrices recuperadas (aunque tengan ruido)
+imagen_final = rqr.reconstruir_mosaico(qrs_recuperados)
+
+if imagen_final is not None:
+    plt.imshow(imagen_final, cmap='gray')
+    plt.show()
 else:
-    print("No hay suficientes frames en el GIF para el multiplexado solicitado.")"""
+    print("No se pudo reconstruir la imagen.")"""
