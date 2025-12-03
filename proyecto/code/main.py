@@ -18,7 +18,7 @@ FILAS = 10
 COLS = 10
 RADIO_PUPILA = 0.65 #Proporcion
 
-"""#Prueba DRPE con QR
+#Prueba DRPE con QR
 if len(lista_frames) > 0:
 
     gif_recuperado = []
@@ -30,11 +30,11 @@ if len(lista_frames) > 0:
 
         gif_recuperado.append(frame_recuperado)
 
-    reproducir_gif(gif_recuperado)"""
+    reproducir_gif(gif_recuperado)
 
 
 
-# Prueba Multiplexing
+"""# Prueba Multiplexing
 
 # Configuración del Multiplexado
 NUM_FRAMES = 2  # Cuántos frames vamos a sumar
@@ -63,5 +63,5 @@ if len(test_qr) >= NUM_FRAMES:
     plt.figure(figsize=(10, 5))
     plt.subplot(1, 2, 1); plt.imshow(test_qr[0], cmap='gray'); plt.title("Original")
     plt.subplot(1, 2, 2); plt.imshow(imagen_final, cmap='gray'); plt.title("Recuperada del Mosaico")
-    plt.show()
+    plt.show()"""
             
