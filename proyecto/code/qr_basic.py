@@ -25,7 +25,7 @@ def encriptacion_imagen_qr(frame, FILAS, COLS, radio_pupila = 0.65, graph = True
         # Probamos desencriptar para ver si recuperamos la imagen
         #img_recuperada = desencriptar_drpe(img_cifrada, k1, k2)
         matriz_recuperada = desencriptar_drpe(matriz_cifrada, k1, k2)
-        matriz_recuperada_ruidosa = np.abs(matriz_recuperada)
+        matriz_recuperada_ruidosa = np.abs(matriz_recuperada)   #Intensidad
         
         imagen_desencriptada.append(matriz_recuperada_ruidosa)
 
