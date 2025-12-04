@@ -9,7 +9,7 @@ from qr_basic import encriptacion_imagen_qr
 
 ## Extraemos el video a procesar
 # Ruta del archivo
-#archivo_gif = r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\proyecto\video_test\SpAQ.gif"
+#archivo_gif = r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
 archivo_gif = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
 # Creamos la lista con los frames extraidos del gif
 lista_frames = extraer_frames(archivo_gif)
