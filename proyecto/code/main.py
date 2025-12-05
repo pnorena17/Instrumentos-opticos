@@ -9,14 +9,22 @@ from qr_basic import encriptacion_imagen_qr
 
 ## Extraemos el video a procesar
 # Ruta del archivo
-#archivo_gif = r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
-archivo_gif = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
+archivo_gif = r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
+#archivo_gif = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
 # Creamos la lista con los frames extraidos del gif
 lista_frames = extraer_frames(archivo_gif)
 
 FILAS = 10
 COLS = 10
-RADIO_PUPILA = 0.65 #Proporcion
+
+
+# Parametros
+long_onda = 633e-9 #633 nm
+pixel_size = 2.74e-6 # tamaño de pixel (um) Alvium 1800 U-811 with Sony IMX546
+foco = 0.5 #(500 mm)
+RADIO_PUPILA = 0.5
+
+
 
 #Prueba DRPE con QR
 if len(lista_frames) > 0:
@@ -26,7 +34,10 @@ if len(lista_frames) > 0:
     for i, frame in enumerate(lista_frames):
         # Vamos a trabajar solo con el primer frame para probar
         print(f"Encriptando el frame {i+1}")
-        frame_recuperado = encriptacion_imagen_qr(frame, FILAS, COLS, RADIO_PUPILA, graph=False)
+        frame_recuperado = encriptacion_imagen_qr(
+            frame, FILAS, COLS, radio_pupila=RADIO_PUPILA,
+            dx=pixel_size, long_onda=long_onda,
+            foco=foco,graph=False)
 
         gif_recuperado.append(frame_recuperado)
 

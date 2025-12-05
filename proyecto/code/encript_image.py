@@ -14,8 +14,11 @@ def crear_pupila(dimensiones, radio):
     pupila = (distancia_al_centro <= radio).astype(float)
     
     return pupila
+    
 
-def encriptar_drpe(imagen_matriz, radio_pupila=None):
+def encriptar_drpe(imagen_matriz, radio_pupila=None, dx=None, long_onda=None, foco=None):
+    
+    #dx es el tamaño de pixel
     # Obtenemos dimensiones
     filas, cols = imagen_matriz.shape
     
@@ -27,8 +30,16 @@ def encriptar_drpe(imagen_matriz, radio_pupila=None):
     mascara2 = np.exp(1j * fase2)
     
     # GENERAR PUPILA (Si se solicita)
+
     if radio_pupila is not None:
-        pupila = crear_pupila((filas, cols), radio_pupila)
+        if dx is not None and long_onda is not None and foco is not None:
+            #Calculemos el tamaño del plano en el espacio de Fourier
+            N = max(filas, cols) 
+            dx_fourier = (long_onda * foco)/(N*dx)
+            radio_pixeles = radio_pupila /dx_fourier
+            pupila = crear_pupila((filas, cols), radio_pixeles)
+        else:
+            pupila = crear_pupila((filas, cols), radio_pupila)
     else:
         # Si no hay radio, la pupila es todo 1 (pasa todo)
         pupila = np.ones((filas, cols))

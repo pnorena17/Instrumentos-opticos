@@ -7,19 +7,23 @@ from encript_image import desencriptar_drpe
 import generate_qr as gqr
 import reconstruccion as rqr
 
-def encriptacion_imagen_qr(frame, FILAS, COLS, radio_pupila = 0.65, graph = True):
+def encriptacion_imagen_qr(frame, FILAS, COLS, radio_pupila = 0.65, dx=None, long_onda=None, foco=None, graph=True):
     #Generamos la matriz con los QR de cada frame
     lista_qr = gqr.generar_lista_qrs(frame, filas=FILAS, cols=COLS, escala=2)
 
     imagen_desencriptada = []
 
-    radio_pupila = min(frame.shape[0],frame.shape[1])*radio_pupila
+    #radio_pupila = min(frame.shape[0],frame.shape[1])*radio_pupila porque ya vamos a usar el fisico
 
     for qr in lista_qr:
         # Llamamos a la función de encriptar
         #radio = 400 #pixeles
         #img_cifrada, k1, k2, mascara_pupila = encriptar_drpe(frame, radio_pupila=radio)
-        matriz_cifrada, k1, k2, mascara_pupila = encriptar_drpe(qr, radio_pupila)
+        matriz_cifrada, k1, k2, mascara_pupila = encriptar_drpe(
+            qr, radio_pupila=radio_pupila,
+            dx=dx, long_onda=long_onda,
+            foco=foco)
+                                                        
         
         
         # Probamos desencriptar para ver si recuperamos la imagen

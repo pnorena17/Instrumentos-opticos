@@ -23,7 +23,7 @@ def dividir_imagen(matriz, filas, cols):
             bloques.append(bloque)
     return bloques, h_bloque, w_bloque
 
-def generar_lista_qrs(imagen_binaria, filas=6, cols=8, escala=2):
+def generar_lista_qrs(imagen_binaria, filas=6, cols=8, escala=10):
     """
     Genera una LISTA de matrices QR individuales.
     Cada QR contiene en su header el índice 'i' para saber su coordenada.
