@@ -1,130 +1,162 @@
 import numpy as np
 import math
+import matplotlib.pyplot as plt # Necesario para graficar
 from encript_image import encriptar_drpe, desencriptar_drpe
 
 def dividir_en_bloques_iguales(imagen, filas, cols):
-    """
-    Divide una imagen grande en una lista de bloques pequeños.
-    IMPORTANTE: Si la división no es exacta, rellena con ceros (padding)
-    para que TODOS los bloques tengan el mismo tamaño (shape).
-    """
+    # Dividimos la imagen en "bloques" pequeños
     alto, ancho = imagen.shape
-    
-    # Tamaño objetivo de cada bloque
-    # Usamos ceil para asegurar que cubra toda la imagen
     h_bloque = math.ceil(alto / filas)
     w_bloque = math.ceil(ancho / cols)
     
     bloques = []
-    coords = [] # Guardamos donde iba cada bloque para rearmar
+    
+    # Datos para reconstrucción
+    datos_bloques = [] 
     
     for i in range(filas):
         for j in range(cols):
             y_inicio = i * h_bloque
             x_inicio = j * w_bloque
             
-            # Recorte base
-            # Si nos salimos de la imagen, numpy devuelve lo que haya hasta el borde
-            recorte = imagen[y_inicio : y_inicio + h_bloque, x_inicio : x_inicio + w_bloque]
+            # Recorte (con manejo de bordes)
+            recorte = imagen[y_inicio : min(y_inicio + h_bloque, alto), 
+                             x_inicio : min(x_inicio + w_bloque, ancho)]
             
-            # --- PADDING DE SEGURIDAD ---
-            # Para sumar matrices, todas deben medir EXACTAMENTE lo mismo.
-            # Si el recorte del borde es más pequeño, lo rellenamos con negro.
+            # Padding si el bloque quedó más pequeño (bordes derechos/inferiores)
+            # Para sumar campos ópticos, todos deben medir lo mismo
             h_actual, w_actual = recorte.shape
             
-            if h_actual < h_bloque or w_actual < w_bloque:
-                bloque_pad = np.zeros((h_bloque, w_bloque), dtype=imagen.dtype)
-                bloque_pad[:h_actual, :w_actual] = recorte
-                bloque_final = bloque_pad
-            else:
-                bloque_final = recorte
-                
-            bloques.append(bloque_final)
-            coords.append((y_inicio, x_inicio, h_actual, w_actual)) # Guardamos tamaño real útil
+            pad_h = h_bloque - h_actual
+            pad_w = w_bloque - w_actual
             
-    return bloques, coords, (alto, ancho)
+            if pad_h > 0 or pad_w > 0:
+                recorte = np.pad(recorte, ((0, pad_h), (0, pad_w)), mode='constant')
+            
+            bloques.append(recorte)
+            
+            datos_bloques.append({
+                'bloque_original': recorte, # Guardamos el original para comparar visualmente
+                'idx': len(bloques)-1,
+                'coords': (i, j, h_actual, w_actual) 
+            })
+            
+    return bloques, datos_bloques, (h_bloque, w_bloque)
 
-def multiplexar_imagen_en_partes(imagen_qr, filas_grid=3, cols_grid=3, radio_pupila=None):
+def multiplexar_imagen_en_partes(imagen_grande, filas_grid=2, cols_grid=2, 
+                                 radio_pupila=None, dx=None, long_onda=None, foco=None):
     """
-    1. Parte la imagen del QR en filas*cols pedazos.
-    2. Encripta cada pedazo.
-    3. Suma todo en un paquete pequeño.
+    Toma una imagen (QR grande), la divide y encripta cada parte sumando los campos.
+    Ahora soporta parámetros FÍSICOS.
     """
+    # Tomamos el QR y lo dividimos para encriptarlo y "sumarlo" (multiplexing)
     
-    # 1. Dividir
-    lista_partes, coordenadas, dim_original = dividir_en_bloques_iguales(imagen_qr, filas_grid, cols_grid)
+    # Dividimos
+    bloques, datos_bloques, (h_b, w_b) = dividir_en_bloques_iguales(imagen_grande, filas_grid, cols_grid)
     
-    # 2. Preparar el paquete (del tamaño de UN BLOQUE, no de la imagen entera)
-    h_block, w_block = lista_partes[0].shape
-    paquete_optico = np.zeros((h_block, w_block), dtype=complex)
+    campo_total = np.zeros((h_b, w_b), dtype=complex)
     banco_llaves = []
     
-    print(f"--- Multiplexando imagen en {len(lista_partes)} partes ({filas_grid}x{cols_grid}) ---")
-    print(f"Tamaño original: {imagen_qr.shape} -> Tamaño paquete: {paquete_optico.shape}")
-
-    # 3. Encriptar y Sumar
-    for i, bloque in enumerate(lista_partes):
+    print(f"Multiplexando: Dividiendo imagen en {filas_grid}x{cols_grid} bloques de {h_b}x{w_b} px.")
+    
+    for item in datos_bloques:
+        bloque = item['bloque_original']
         
-        # DRPE normal sobre el bloque
-        campo_encriptado, k1, k2, _ = encriptar_drpe(bloque, radio_pupila=radio_pupila)
+        # Encriptamos cada bloque individualmente
         
-        # Suma coherente
-        paquete_optico += campo_encriptado
+        img_encriptada, k1, k2, pupila = encriptar_drpe(
+            bloque, 
+            radio_pupila=radio_pupila,
+            dx=dx, 
+            long_onda=long_onda, 
+            foco=foco
+        )
         
-        # Guardamos llaves y coordenadas para saber dónde poner este pedazo luego
+        # Superposición de campos
+        campo_total += img_encriptada
+        
+        # Guardamos llaves
         banco_llaves.append({
-            'idx': i,
+            'idx': item['idx'],
             'k1': k1,
             'k2': k2,
-            'coords': coordenadas[i] # (y, x, h_real, w_real)
+            'coords': item['coords'],
+            'original': bloque # Guardamos referencia para comparar
         })
-        print(f"   > Parte {i+1}/{len(lista_partes)} encriptada.")
         
-    # Retornamos dimensiones originales para poder crear el lienzo al volver
-    return paquete_optico, banco_llaves, dim_original
+    return campo_total, banco_llaves, (imagen_grande.shape)
 
-def recuperar_y_ensamblar_imagen(paquete_optico, banco_llaves, dim_original):
-    """
-    1. Recorre las llaves.
-    2. Desencripta cada pedazo (limpiando ruido).
-    3. Pega el pedazo en el lugar correcto del lienzo original.
-    """
+
+def desencriptar_y_reconstruir(paquete_optico, banco_llaves, dim_original, ver_paso_a_paso=False):
+    
+    # Tomamos cada paquete superpuesto y extraemos una imagen con su respectiva llave
     alto_tot, ancho_tot = dim_original
     
-    # Lienzo reconstruido
+    # Reconstruimos
     imagen_reconstruida = np.zeros((alto_tot, ancho_tot), dtype=int)
     
     print(f"--- Recuperando y Ensamblando ({len(banco_llaves)} partes) ---")
     
-    for item in banco_llaves:
-        idx = item['idx']
+    for i, item in enumerate(banco_llaves):
         k1 = item['k1']
         k2 = item['k2']
-        y, x, h_real, w_real = item['coords']
+        r, c, h_real, w_real = item['coords']
+        bloque_original = item.get('original', None) # Recuperamos el original para comparar
         
-        # 1. Desencriptar
-        campo = desencriptar_drpe(paquete_optico, k1, k2)
+        # Desencriptamos
+        # Usamos el paquete completo, pero con la llave de ese bloque.
+        campo_recuperado = desencriptar_drpe(paquete_optico, k1, k2)
         
-        # 2. Limpieza Básica (Absoluto + Normalizar + Binarizar)
-        img_ruidosa = np.abs(campo)
+
+        img_ruidosa = np.abs(campo_recuperado)
         
-        # Normalizar 0-1
+        # Graficamos
+        if ver_paso_a_paso:
+            plt.figure(figsize=(12, 4))
+            
+            # A: Original (Lo que queremos obtener)
+            plt.subplot(1, 3, 1)
+            plt.title(f"Bloque {i+1} Original (Ground Truth)")
+            plt.imshow(bloque_original, cmap='gray')
+            plt.axis('off')
+            
+            # B: El Sistema Encriptado (Lo que viaja por la fibra/aire)
+            # Mostramos magnitud del campo complejo total
+            plt.subplot(1, 3, 2)
+            plt.title("Sistema Encriptado (Ruido Total)")
+            plt.imshow(np.abs(paquete_optico), cmap='gray') # 'inferno' resalta bien el ruido
+            plt.axis('off')
+            
+            # C: Lo recuperado
+            plt.subplot(1, 3, 3)
+            plt.title(f"Bloque {i+1} Recuperado")
+            plt.imshow(img_ruidosa, cmap='gray')
+            plt.axis('off')
+            
+            plt.suptitle(f"Proceso de Desencriptación - Bloque {i+1}", fontsize=14)
+            plt.tight_layout()
+            plt.show()
+
+        # 4. Limpieza simple para reconstrucción (Normalizar 0-1)
         vmin, vmax = img_ruidosa.min(), img_ruidosa.max()
         if vmax > vmin:
             img_norm = (img_ruidosa - vmin) / (vmax - vmin)
         else:
             img_norm = img_ruidosa
             
-        # Binarizar (Umbral 0.5 suele funcionar bien para QR)
-        # Nota: Aquí asumimos que el ruido de fondo es menor que la señal.
-        # Con 9 partes (3x3), el ruido será considerable, tal vez necesites ajustar el umbral.
+        # Umbral simple
         bloque_limpio = np.where(img_norm > 0.5, 1, 0)
         
-        # 3. Pegar en el lienzo
-        # Ojo: El bloque recuperado puede tener padding extra si estaba en el borde.
-        # Usamos h_real y w_real para recortar solo la parte útil.
-        imagen_reconstruida[y : y + h_real, x : x + w_real] = bloque_limpio[:h_real, :w_real]
+        # 5. Pegar en el lienzo final
+        # Necesitamos saber el tamaño de los bloques usados en la encriptación
+        h_bloque, w_bloque = img_ruidosa.shape
         
-        # print(f"   > Parte {idx} recuperada.")
+        y_pos = r * h_bloque
+        x_pos = c * w_bloque
+        
+        # Recortamos el padding extra que agregamos antes (si hubo)
+        bloque_util = bloque_limpio[0:h_real, 0:w_real]
+        
+        imagen_reconstruida[y_pos : y_pos + h_real, x_pos : x_pos + w_real] = bloque_util
         
     return imagen_reconstruida

@@ -59,7 +59,7 @@ def leer_qr_individual(matriz_qr):
     if not decoded_objects:
         return None
     
-    # Procesar datos (igual que tenías)
+    # Procesar datos
     obj = decoded_objects[0]
     
     try:

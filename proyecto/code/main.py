@@ -25,7 +25,7 @@ foco = 0.5 #(500 mm)
 RADIO_PUPILA = 0.5
 
 
-
+"""
 #Prueba DRPE con QR
 if len(lista_frames) > 0:
 
@@ -41,38 +41,49 @@ if len(lista_frames) > 0:
 
         gif_recuperado.append(frame_recuperado)
 
-    reproducir_gif(gif_recuperado)
+    reproducir_gif(gif_recuperado)"""
 
 
+# Prueba Multiplexing
+print("\n--- INICIANDO PRUEBA DE MULTIPLEXING ---")
 
-"""# Prueba Multiplexing
+# Usaremos el primer frame de la lista para probar
+frame_prueba = lista_frames[0]
 
-# Configuración del Multiplexado
-NUM_FRAMES = 2  # Cuántos frames vamos a sumar
-RADIO_PRUEBA = None 
-ESCALA_QR = 2 # Entre mas mejor escala para resistir el ruido de suma
+# Generamos un QR grande de ese frame
+# Aumentamos la escala para que resista mejor el ruido del multiplexado
+ESCALA_QR_MUX = 20 
+lista_qrs_test = gqr.generar_lista_qrs(frame_prueba, filas=FILAS, cols=COLS, escala=ESCALA_QR_MUX)
 
-test_qr = gqr.generar_lista_qrs(lista_frames[0], filas=FILAS, cols=COLS, escala=ESCALA_QR)
+# Tomamos UNO de esos QRs para dividirlo y multiplexarlo
+qr_para_multiplexar = lista_qrs_test[0] 
 
-if len(test_qr) >= NUM_FRAMES:
-    
-    # Llamamos a la funcion externa para crear el paquete
-    paquete, llaves, dims_orig = mux.multiplexar_imagen_en_partes(
-        test_qr[0], 
-        filas_grid=2, 
-        cols_grid=2, 
-        radio_pupila=50
-    )
-    plt.figure()
-    plt.imshow(np.log1p(np.abs(paquete)), cmap='gray')
-    plt.title("Paquete Óptico")
-    plt.show()
+# Dividimos el QR en 2x2 = 4 partes
+FILAS_GRID = 2
+COLS_GRID = 2
 
-    imagen_final = mux.recuperar_y_ensamblar_imagen(paquete, llaves, dims_orig)
+# Llamamos a la funcion con PARAMETROS FISICOS
+paquete_optico, banco_llaves, dims_orig = mux.multiplexar_imagen_en_partes(
+    qr_para_multiplexar, 
+    filas_grid=FILAS_GRID, 
+    cols_grid=COLS_GRID, 
+    radio_pupila=RADIO_PUPILA, # Usamos la constante definida arriba (ej. 1.5e-3)
+    dx=pixel_size,
+    long_onda=long_onda,
+    foco=foco
+)
 
-    # 4. Ver resultado
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1); plt.imshow(test_qr[0], cmap='gray'); plt.title("Original")
-    plt.subplot(1, 2, 2); plt.imshow(imagen_final, cmap='gray'); plt.title("Recuperada del Mosaico")
-    plt.show()"""
+# Desencriptamos viendo la comparativa visual
+# Ponemos ver_paso_a_paso=True para ver las gráficas que pediste
+imagen_rearmada = mux.desencriptar_y_reconstruir(
+    paquete_optico, 
+    banco_llaves, 
+    dims_orig, 
+    ver_paso_a_paso=True
+)
+
+plt.figure()
+plt.imshow(imagen_rearmada, cmap='gray')
+plt.title("QR Total Reconstruido tras Multiplexado")
+plt.show()
             
