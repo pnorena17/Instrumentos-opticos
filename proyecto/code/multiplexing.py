@@ -1,7 +1,9 @@
 import numpy as np
 import math
+import cv2
 import matplotlib.pyplot as plt # Necesario para graficar
 from encript_image import encriptar_drpe, desencriptar_drpe
+
 
 def dividir_en_bloques_iguales(imagen, filas, cols):
     # Dividimos la imagen en "bloques" pequeños
@@ -44,7 +46,7 @@ def dividir_en_bloques_iguales(imagen, filas, cols):
     return bloques, datos_bloques, (h_bloque, w_bloque)
 
 def multiplexar_imagen_en_partes(imagen_grande, filas_grid=2, cols_grid=2, 
-                                 radio_pupila=None, dx=None, long_onda=None, foco=None):
+                                 radio_pupila=None, dx=None, long_onda=None, foco=None, logico_qr = 0):
     """
     Toma una imagen (QR grande), la divide y encripta cada parte sumando los campos.
     Ahora soporta parámetros FÍSICOS.
@@ -69,7 +71,8 @@ def multiplexar_imagen_en_partes(imagen_grande, filas_grid=2, cols_grid=2,
             radio_pupila=radio_pupila,
             dx=dx, 
             long_onda=long_onda, 
-            foco=foco
+            foco=foco,
+            matriz_mascara = logico_qr
         )
         
         # Superposición de campos
@@ -84,7 +87,7 @@ def multiplexar_imagen_en_partes(imagen_grande, filas_grid=2, cols_grid=2,
             'original': bloque # Guardamos referencia para comparar
         })
         
-    return campo_total, banco_llaves, (imagen_grande.shape)
+    return  campo_total, banco_llaves, (imagen_grande.shape)
 
 
 def desencriptar_y_reconstruir(paquete_optico, banco_llaves, dim_original, ver_paso_a_paso=False):
@@ -109,6 +112,31 @@ def desencriptar_y_reconstruir(paquete_optico, banco_llaves, dim_original, ver_p
         
 
         img_ruidosa = np.abs(campo_recuperado)
+
+        # 4. Limpieza simple para reconstrucción (Normalizar 0-1)
+        vmin, vmax = img_ruidosa.min(), img_ruidosa.max()
+        if vmax > vmin:
+            img_norm = (img_ruidosa - vmin) / (vmax - vmin)
+        else:
+            img_norm = img_ruidosa
+            
+        # Umbral simple
+        img_ruidosa = np.where(img_norm > np.mean(img_norm), 1, 0).astype(np.uint8)
+
+        #img_suave = cv2.medianBlur(img_ruidosa, 3)
+        
+        p1, p99 = np.percentile(img_ruidosa, (1, 99))
+        img_clipped = np.clip(img_ruidosa, p1, p99)
+
+        # 3. Normalización (0 a 255)
+        # Usamos los percentiles recortados como límites
+        if p99 > p1:
+            img_norm = (img_clipped - p1) / (p99 - p1)
+        else:
+            img_norm = img_clipped
+
+        # Umbral simple
+        bloque_limpio = np.where(img_norm > 0.9, 1, 0)
         
         # Graficamos
         if ver_paso_a_paso:
@@ -130,22 +158,12 @@ def desencriptar_y_reconstruir(paquete_optico, banco_llaves, dim_original, ver_p
             # C: Lo recuperado
             plt.subplot(1, 3, 3)
             plt.title(f"Bloque {i+1} Recuperado")
-            plt.imshow(img_ruidosa, cmap='gray')
+            plt.imshow(bloque_limpio, cmap='gray')
             plt.axis('off')
             
             plt.suptitle(f"Proceso de Desencriptación - Bloque {i+1}", fontsize=14)
             plt.tight_layout()
             plt.show()
-
-        # 4. Limpieza simple para reconstrucción (Normalizar 0-1)
-        vmin, vmax = img_ruidosa.min(), img_ruidosa.max()
-        if vmax > vmin:
-            img_norm = (img_ruidosa - vmin) / (vmax - vmin)
-        else:
-            img_norm = img_ruidosa
-            
-        # Umbral simple
-        bloque_limpio = np.where(img_norm > 0.5, 1, 0)
         
         # 5. Pegar en el lienzo final
         # Necesitamos saber el tamaño de los bloques usados en la encriptación
