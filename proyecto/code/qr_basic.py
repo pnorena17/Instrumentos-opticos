@@ -7,9 +7,9 @@ from encript_image import desencriptar_drpe
 import generate_qr as gqr
 import reconstruccion as rqr
 
-def encriptacion_imagen_qr(frame, FILAS, COLS, radio_pupila = 0.65, dx=None, long_onda=None, foco=None, graph=True):
+def encriptacion_imagen_qr(frame, FILAS, COLS, radio_pupila = None, dx=None, long_onda=None, foco=None, graph=True, resolucion_camara = 2048):
     #Generamos la matriz con los QR de cada frame
-    lista_qr = gqr.generar_lista_qrs(frame, filas=FILAS, cols=COLS, escala=2)
+    lista_qr, _ = gqr.generar_lista_qrs(frame, filas=FILAS, cols=COLS, resolucion= resolucion_camara)
 
     imagen_desencriptada = []
 
@@ -29,7 +29,7 @@ def encriptacion_imagen_qr(frame, FILAS, COLS, radio_pupila = 0.65, dx=None, lon
         # Probamos desencriptar para ver si recuperamos la imagen
         #img_recuperada = desencriptar_drpe(img_cifrada, k1, k2)
         matriz_recuperada = desencriptar_drpe(matriz_cifrada, k1, k2)
-        matriz_recuperada_ruidosa = np.abs(matriz_recuperada)   #Intensidad
+        matriz_recuperada_ruidosa = np.abs(matriz_recuperada)**2   #Intensidad
         
         imagen_desencriptada.append(matriz_recuperada_ruidosa)
 
@@ -46,7 +46,6 @@ def encriptacion_imagen_qr(frame, FILAS, COLS, radio_pupila = 0.65, dx=None, lon
 
 
     #Visualizamos  la recuperación del QR
-    matriz_limpia = median_filter(matriz_recuperada, size=3) 
     imagen_final = rqr.leer_qr_individual(matriz_recuperada)
     imagen_reconstruida = rqr.reconstruir_mosaico(imagen_desencriptada)
 
