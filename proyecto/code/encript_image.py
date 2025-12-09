@@ -29,8 +29,7 @@ def encriptar_drpe(imagen_matriz, radio_pupila=None, dx=None, long_onda=None, fo
     mascara1 = np.exp(1j * fase1)
     mascara2 = np.exp(1j * fase2)
     
-    # GENERAR PUPILA (Si se solicita)
-
+    # GENERAR PUPILA 
     if radio_pupila is not None:
         if dx is not None and long_onda is not None and foco is not None:
             #Calculemos el tamaño del plano en el espacio de Fourier
