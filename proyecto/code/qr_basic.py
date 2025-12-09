@@ -76,4 +76,4 @@ def encriptacion_imagen_qr(frame, FILAS, COLS, radio_pupila = None, dx=None, lon
         plt.tight_layout()
         plt.show()
 
-    return imagen_reconstruida
+    return imagen_reconstruida, qr, matriz_cifrada, matriz_recuperada
