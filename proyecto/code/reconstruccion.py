@@ -47,9 +47,9 @@ def leer_qr_individual(matriz_qr, ver_debug=False):
     # --- VISUALIZACIÓN DE DEBUG ---
     if ver_debug:
         plt.figure(figsize=(10, 3))
-        plt.subplot(1, 3, 1); plt.title("Original (Recortada)"); plt.imshow(img_clipped, cmap='gray')
-        plt.subplot(1, 3, 2); plt.title("Mediana"); plt.imshow(img_suave, cmap='gray')
-        plt.subplot(1, 3, 3); plt.title(f"Otsu (Thresh={thresh_val:.0f})"); plt.imshow(img_bin, cmap='gray')
+        plt.subplot(1, 3, 1); plt.title("Original"); plt.imshow(img_clipped, cmap='gray')
+        plt.subplot(1, 3, 2); plt.title("Filtro de mediana"); plt.imshow(img_suave, cmap='gray')
+        plt.subplot(1, 3, 3); plt.title(f"QR para decodificación"); plt.imshow(img_bin, cmap='gray')
         plt.tight_layout(); plt.show()
     # ------------------------------
 
@@ -58,7 +58,7 @@ def leer_qr_individual(matriz_qr, ver_debug=False):
     
     # ZBar funciona mejor con imágenes entre 400 y 800 píxeles de lado.
     # Si tu imagen es gigante (ej. 2048), la reducimos para facilitar la lectura.
-    TARGET_SIZE = 500
+    TARGET_SIZE = 600
     
     if h > TARGET_SIZE or w > TARGET_SIZE:
         # Calculamos el factor de reducción para mantener la proporción
@@ -78,6 +78,15 @@ def leer_qr_individual(matriz_qr, ver_debug=False):
     img_final = cv2.copyMakeBorder(
         img_lista_para_leer, 20, 20, 20, 20, cv2.BORDER_CONSTANT, value=255
     )
+
+    img_final = median_filter(img_final, size=3)
+    img_final = median_filter(img_final, size=3)
+
+    if ver_debug:
+        plt.figure()
+        plt.imshow(img_final, cmap='gray')
+        plt.title("QR procesado")
+        plt.show()
 
     # 7. Intentar Leer (Directo e Invertido)
     # Intento A: Tal cual salió de Otsu
