@@ -16,8 +16,8 @@ archivo_gif = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-optic
 # Creamos la lista con los frames extraidos del gif
 lista_frames = extraer_frames(archivo_gif)
 
-FILAS = 5
-COLS = 5
+FILAS = 10
+COLS = 10
 
 
 # Parametros
@@ -172,13 +172,13 @@ elif (modo == 3):
     #Prueba DRPE con QR
     if len(lista_frames) > 0:
 
-        frames_prueba = lista_frames[:1]
+        frames_prueba = lista_frames[:]
         gif_recuperado = []
 
         for i, frame in enumerate(frames_prueba):
             # Vamos a trabajar solo con el primer frame para probar
             print(f"Encriptando el frame {i+1}")
-            frame_recuperado = encriptacion_imagen_qr(
+            frame_recuperado, _, _, _ = encriptacion_imagen_qr(
                 frame, FILAS, COLS, radio_pupila=RADIO_PUPILA,
                 dx=pixel_size_detector, long_onda=long_onda,
                 foco=foco,graph=False)
@@ -187,7 +187,7 @@ elif (modo == 3):
 
         reproducir_gif(gif_recuperado)
 
-if (modo==3):
+if (modo==4):
         
     # Prueba Multiplexing
     # Usaremos el primer frame de la lista para probar
@@ -222,7 +222,7 @@ if (modo==3):
         paquete_optico, 
         banco_llaves, 
         dims_orig, 
-        ver_paso_a_paso=False
+        ver_paso_a_paso=True
     )
 
     plt.figure()
