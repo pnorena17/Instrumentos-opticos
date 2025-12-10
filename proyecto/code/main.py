@@ -1,3 +1,6 @@
+import time
+t_inicio_total = time.time() #cronometro global
+print("Cargando librerias...", end="")
 import numpy as np
 import matplotlib.pyplot as plt
 from gif_to_frame import extraer_frames
@@ -8,13 +11,18 @@ from play_gif import reproducir_gif
 from qr_basic import encriptacion_imagen_qr
 from encript_image import encriptar_drpe
 from encript_image import desencriptar_drpe
+print(f" Listo ({time.time() - t_inicio_total:.4f} s)")
+
 
 ## Extraemos el video a procesar
 # Ruta del archivo
-#archivo_gif = r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
-archivo_gif = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
+archivo_gif = r"C:\Users\user\Desktop\Universidad\Semestre 11\Instrumentos Opticos\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
+#archivo_gif = r"C:\Users\pauli\OneDrive\Documents\Universidad\Instrumentos-opticos\proyecto\video_test\stickman 200x200.gif"
+print("Cargando GIF...", end="")
+t_carga = time.time()
 # Creamos la lista con los frames extraidos del gif
 lista_frames = extraer_frames(archivo_gif)
+print(f" Listo ({time.time() - t_carga:.4f} s)")
 
 FILAS = 10
 COLS = 10
@@ -29,9 +37,9 @@ resolucion_camara = 2048
 
 print(f"El tamaño de la pupila es {RADIO_PUPILA} m y es {(2*RADIO_PUPILA)*100/(pixel_size_detector*resolucion_camara):.2f} % de la imágen de lado {pixel_size_detector*resolucion_camara} m")
 
-modo = int(input("Ingrese el modo en que desea trabajar \n1. Una imágen normal\n2. Un frame con QR\n3. Gif con QR y DRPE\n4. Con multiplexado de un QR \n"))
+modo = 4#int(input("Ingrese el modo en que desea trabajar \n1. Una imágen normal\n2. Un frame con QR\n3. Gif con QR y DRPE\n4. Con multiplexado de un QR \n"))
 
-
+t_inicio_proceso = time.time() #cronometro del proceso
 if (modo == 1):
     # =======================================================
     # MODO 1: Objeto Pequeño (Stickman 200x200)
@@ -233,3 +241,6 @@ if (modo==4):
     datos = rqr.leer_qr_individual(imagen_rearmada, ver_debug=True)
 
     print(datos)
+
+# Tiempo final
+print(f"\nTiempo TOTAL de script: {time.time() - t_inicio_total:.4f} s")
